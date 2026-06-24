@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>밸런스 게임 관리자</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d14;
+    --surface: #1a1a2e;
+    --surface2: #242438;
+    --A: #ff6b6b;
+    --B: #4ecdc4;
+    --text: #f0f0f0;
+    --muted: #777;
+    --border: rgba(255,255,255,0.08);
+    --radius: 14px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--A), var(--B));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 24px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    max-width: 1100px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  /* ── 상태 배지 ── */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .status-badge.waiting { background: rgba(119,119,119,0.2); color: var(--muted); }
+  .status-badge.showing { background: rgba(255,212,59,0.2); color: #ffd43b; }
+  .status-badge.voting  { background: rgba(78,205,196,0.2); color: var(--B); }
+  .status-badge.result  { background: rgba(255,107,107,0.2); color: var(--A); }
+  .status-badge.ended   { background: rgba(119,119,119,0.2); color: var(--muted); }
+
+  /* ── 현재 문제 미리보기 ── */
+  .current-q {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .current-sub { font-size: 0.85rem; color: var(--muted); }
+
+  /* ── 투표 수 ── */
+  .vote-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 14px 0;
+  }
+  .vote-box {
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+  .vote-box.A { background: rgba(255,107,107,0.12); border: 1px solid rgba(255,107,107,0.25); }
+  .vote-box.B { background: rgba(78,205,196,0.12);  border: 1px solid rgba(78,205,196,0.25); }
+  .vote-box .vb-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+  .vote-box .vb-count { font-size: 1.8rem; font-weight: 900; }
+  .vote-box.A .vb-count { color: var(--A); }
+  .vote-box.B .vb-count { color: var(--B); }
+  .total-votes { font-size: 0.85rem; color: var(--muted); text-align: center; }
+
+  /* ── 버튼 ── */
+  .btn {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--B), #0abde3);
+    color: #fff;
+  }
+  .btn-danger {
+    background: linear-gradient(135deg, var(--A), #ee5a24);
+    color: #fff;
+  }
+  .btn-warning {
+    background: linear-gradient(135deg, #ffd43b, #f9ca24);
+    color: #222;
+  }
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  /* ── 타이머 설정 ── */
+  .timer-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .timer-row label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+  .timer-row input[type=range] { flex: 1; accent-color: var(--B); }
+  .timer-row .timer-val {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--B);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* ── 문제 목록 ── */
+  .q-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .q-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .q-item.active { border-color: var(--B); }
+  .q-item .q-num {
+    font-size: 0.75rem;
+    color: var(--muted);
+    min-width: 24px;
+    font-weight: 700;
+  }
+  .q-item .q-text { flex: 1; font-size: 0.85rem; }
+  .q-item .q-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+  .q-item .q-del:hover { color: var(--A); }
+
+  /* ── 문제 추가 폼 ── */
+  .add-form { display: grid; gap: 8px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .input-group { display: flex; flex-direction: column; gap: 4px; }
+  .input-group label { font-size: 0.75rem; color: var(--muted); }
+  .input-group input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus { border-color: var(--B); }
+
+  /* ── 이벤트 로그 ── */
+  .log {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    height: 120px;
+    overflow-y: auto;
+    font-family: monospace;
+    line-height: 1.7;
+  }
+  .log-entry { display: block; }
+  .log-entry.action { color: var(--B); }
+  .log-entry.vote { color: #888; }
+  .log-entry.system { color: #ffd43b; }
+
+  /* ── 링크 ── */
+  .links-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+  .link-btn {
+    display: block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 700;
+    transition: border-color 0.2s;
+  }
+  .link-btn:hover { border-color: var(--B); }
+  .link-btn span { display: block; font-size: 1.1rem; margin-bottom: 2px; }
+
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>⚡ 밸런스 게임 관리자</h1>
+
+<div class="layout">
+  <!-- 왼쪽 -->
+  <div>
+    <!-- 현재 상태 -->
+    <div class="card">
+      <div class="card-title">현재 상태</div>
+      <div class="status-badge waiting" id="status-badge">대기 중</div>
+      <div class="current-q" id="current-q">문제가 없습니다</div>
+      <div class="current-sub" id="current-sub">다음 문제 버튼을 눌러 시작하세요</div>
+
+      <div class="vote-split">
+        <div class="vote-box A">
+          <div class="vb-label" id="vb-label-a">A 팀</div>
+          <div class="vb-count" id="vb-count-a">0</div>
+        </div>
+        <div class="vote-box B">
+          <div class="vb-label" id="vb-label-b">B 팀</div>
+          <div class="vb-count" id="vb-count-b">0</div>
+        </div>
+      </div>
+      <div class="total-votes" id="total-votes">총 0명 투표</div>
+    </div>
+
+    <!-- 제어 -->
+    <div class="card">
+      <div class="card-title">게임 제어</div>
+
+      <div class="timer-row">
+        <label>투표 시간</label>
+        <input type="range" id="timer-range" min="5" max="60" value="15" step="5"
+          oninput="document.getElementById('timer-val').textContent=this.value+'초'">
+        <span class="timer-val" id="timer-val">15초</span>
+      </div>
+
+      <button class="btn btn-primary" id="btn-next" onclick="adminNext()">⏭ 다음 문제</button>
+      <button class="btn btn-warning" id="btn-vote" onclick="adminStartVote()" disabled>🗳 투표 시작</button>
+      <button class="btn btn-danger"  id="btn-result" onclick="adminShowResult()" disabled>📊 결과 공개</button>
+      <button class="btn btn-ghost"   onclick="adminReset()">🔄 처음부터</button>
+    </div>
+
+    <!-- 링크 -->
+    <div class="card">
+      <div class="card-title">페이지 링크</div>
+      <div class="links-row">
+        <a href="/participant.html" target="_blank" class="link-btn">
+          <span>📱</span>참여자
+        </a>
+        <a href="/screen.html" target="_blank" class="link-btn">
+          <span>🖥</span>스크린
+        </a>
+      </div>
+    </div>
+
+    <!-- 이벤트 로그 -->
+    <div class="card">
+      <div class="card-title">이벤트 로그</div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 문제 관리 -->
+  <div>
+    <div class="card">
+      <div class="card-title">문제 목록</div>
+      <div class="q-list" id="q-list"></div>
+      <button class="btn btn-ghost" onclick="saveQuestions()" style="margin-top:4px">💾 목록 저장 (서버 반영)</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">문제 추가</div>
+      <div class="add-form">
+        <div class="form-row">
+          <div class="input-group">
+            <label>A 이모지</label>
+            <input type="text" id="new-emoji-a" value="🔥" maxlength="4">
+          </div>
+          <div class="input-group">
+            <label>B 이모지</label>
+            <input type="text" id="new-emoji-b" value="💧" maxlength="4">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="input-group">
+            <label>A 선택지</label>
+            <input type="text" id="new-a" placeholder="예: 카페인">
+          </div>
+          <div class="input-group">
+            <label>B 선택지</label>
+            <input type="text" id="new-b" placeholder="예: 낮잠">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addQuestion()">+ 추가</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const socket = io();
+let state = null;
+let localQuestions = [];
+
+// ── 로그 ──────────────────────────────────────────────────────────────────
+function log(msg, type = 'action') {
+  const box = document.getElementById('log');
+  const now = new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const el = document.createElement('span');
+  el.className = 'log-entry ' + type;
+  el.textContent = `[${now}] ${msg}`;
+  box.appendChild(el);
+  box.appendChild(document.createElement('br'));
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── 상태 업데이트 ─────────────────────────────────────────────────────────
+socket.on('state', (s) => {
+  state = s;
+
+  // 배지
+  const badge = document.getElementById('status-badge');
+  const labels = { waiting:'대기 중', showing:'문제 표시', voting:'투표 중', result:'결과 표시', ended:'종료' };
+  badge.textContent = labels[s.status] || s.status;
+  badge.className = 'status-badge ' + s.status;
+
+  // 현재 문제
+  if (s.currentQuestion) {
+    const q = s.currentQuestion;
+    document.getElementById('current-q').textContent =
+      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+    document.getElementById('current-sub').textContent =
+      `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
+    document.getElementById('vb-label-a').textContent = q.A;
+    document.getElementById('vb-label-b').textContent = q.B;
+  } else {
+    document.getElementById('current-q').textContent = '문제가 없습니다';
+    document.getElementById('current-sub').textContent = '다음 문제 버튼을 눌러 시작하세요';
+  }
+
+  document.getElementById('vb-count-a').textContent = s.votes.A;
+  document.getElementById('vb-count-b').textContent = s.votes.B;
+  document.getElementById('total-votes').textContent = `총 ${s.total}명 투표`;
+
+  // 버튼 활성화
+  document.getElementById('btn-next').disabled =
+    (s.status === 'voting' || s.status === 'ended');
+  document.getElementById('btn-vote').disabled = (s.status !== 'showing');
+  document.getElementById('btn-result').disabled = (s.status !== 'voting');
+
+  // 초기 문제 목록 동기화
+  if (localQuestions.length === 0 && s.totalQuestions > 0) {
+    // 서버에서 목록을 못 받으므로 별도 이벤트로 처리
+  }
+});
+
+socket.on('questions', (qs) => {
+  localQuestions = qs;
+  renderQList();
+});
+
+// ── 제어 ──────────────────────────────────────────────────────────────────
+function adminNext() {
+  socket.emit('admin:next');
+  log('다음 문제로 이동');
+}
+function adminStartVote() {
+  const sec = parseInt(document.getElementById('timer-range').value);
+  socket.emit('admin:startVote', { seconds: sec });
+  log(`투표 시작 (${sec}초)`);
+}
+function adminShowResult() {
+  socket.emit('admin:showResult');
+  log('결과 공개');
+}
+function adminReset() {
+  if (!confirm('처음부터 다시 시작하시겠습니까?')) return;
+  socket.emit('admin:reset');
+  log('게임 리셋', 'system');
+}
+
+// ── 문제 관리 ─────────────────────────────────────────────────────────────
+function renderQList() {
+  const list = document.getElementById('q-list');
+  list.innerHTML = '';
+  localQuestions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'q-item' + (state && state.questionIndex === i ? ' active' : '');
+    div.innerHTML = `
+      <span class="q-num">${i + 1}</span>
+      <span class="q-text">${q.emoji.A} ${q.A} / ${q.emoji.B} ${q.B}</span>
+      <button class="q-del" onclick="deleteQ(${i})">✕</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function deleteQ(i) {
+  localQuestions.splice(i, 1);
+  renderQList();
+}
+
+function addQuestion() {
+  const eA = document.getElementById('new-emoji-a').value.trim() || '⬜';
+  const eB = document.getElementById('new-emoji-b').value.trim() || '⬜';
+  const a  = document.getElementById('new-a').value.trim();
+  const b  = document.getElementById('new-b').value.trim();
+  if (!a || !b) { alert('A, B 선택지를 모두 입력하세요'); return; }
+
+  localQuestions.push({
+    id: Date.now(),
+    A: a, B: b,
+    emoji: { A: eA, B: eB }
+  });
+  renderQList();
+  document.getElementById('new-a').value = '';
+  document.getElementById('new-b').value = '';
+  document.getElementById('new-emoji-a').value = '🔥';
+  document.getElementById('new-emoji-b').value = '💧';
+  log(`문제 추가: ${a} vs ${b}`);
+}
+
+function saveQuestions() {
+  socket.emit('admin:setQuestions', localQuestions);
+  log(`문제 목록 저장 (${localQuestions.length}개)`, 'system');
+}
+
+// ── 초기화 ────────────────────────────────────────────────────────────────
+// 서버에서 초기 문제 목록 불러오기
+socket.emit('admin:getQuestions');
+socket.on('questions', (qs) => {
+  localQuestions = JSON.parse(JSON.stringify(qs));
+  renderQList();
+});
+
+// 서버에 getQuestions 이벤트 없으므로 기본 목록 직접 세팅
+setTimeout(() => {
+  if (localQuestions.length === 0) {
+    localQuestions = [
+      { id:1, A:'치킨', B:'피자', emoji:{ A:'🍗', B:'🍕' } },
+      { id:2, A:'바다', B:'산',   emoji:{ A:'🌊', B:'⛰️' } },
+      { id:3, A:'아침형 인간', B:'야행성 인간', emoji:{ A:'🌅', B:'🌙' } },
+      { id:4, A:'혼밥', B:'같이 밥', emoji:{ A:'🍱', B:'👥' } },
+      { id:5, A:'여름', B:'겨울', emoji:{ A:'☀️', B:'❄️' } },
+    ];
+    renderQList();
+  }
+}, 500);
+
+log('관리자 접속', 'system');
+</script>
+</body>
+</html>

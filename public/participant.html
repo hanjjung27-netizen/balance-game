@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>밸런스 게임 참여</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d14;
+    --surface: #1a1a2e;
+    --A: #ff6b6b;
+    --B: #4ecdc4;
+    --text: #f0f0f0;
+    --muted: #888;
+    --radius: 20px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    user-select: none;
+  }
+
+  /* ── 대기 화면 ── */
+  #screen-waiting {
+    text-align: center;
+  }
+  .logo {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+  .waiting-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--A), var(--B));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .waiting-sub {
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .pulse-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--B);
+    margin: 24px auto 0;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+  }
+
+  /* ── 문제 표시 (showing) ── */
+  #screen-showing {
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+  }
+  .question-badge {
+    display: inline-block;
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+  }
+  .question-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .showing-hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+
+  /* ── 투표 화면 ── */
+  #screen-voting {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .timer-bar-wrap {
+    height: 6px;
+    background: var(--surface);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .timer-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--B), var(--A));
+    border-radius: 3px;
+    transition: width 0.9s linear;
+  }
+
+  .vote-question {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .vote-buttons {
+    display: grid;
+    gap: 14px;
+  }
+
+  .vote-btn {
+    border: none;
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    font-family: inherit;
+    font-size: 1.3rem;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.12s, opacity 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+  .vote-btn:active { transform: scale(0.96); }
+  .vote-btn.A {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff;
+  }
+  .vote-btn.B {
+    background: linear-gradient(135deg, #4ecdc4, #0abde3);
+    color: #fff;
+  }
+  .vote-btn .btn-emoji { font-size: 2rem; }
+  .vote-btn .btn-label { font-size: 1.1rem; }
+  .vote-btn.voted {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .vote-btn.selected {
+    opacity: 1;
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.4);
+  }
+
+  /* ── 결과 화면 ── */
+  #screen-result {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  .result-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .result-question {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .result-bars {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .result-row .side-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    width: 80px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .result-row.A .side-label { color: var(--A); }
+  .result-row.B .side-label { color: var(--B); }
+  .bar-track {
+    flex: 1;
+    height: 36px;
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: #fff;
+    transition: width 0.8s cubic-bezier(.4,0,.2,1);
+    min-width: 40px;
+  }
+  .bar-fill.A { background: linear-gradient(90deg, #ee5a24, #ff6b6b); }
+  .bar-fill.B { background: linear-gradient(90deg, #0abde3, #4ecdc4); }
+
+  .result-total {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .voted-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(78,205,196,0.15);
+    border: 1px solid var(--B);
+    color: var(--B);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  /* ── 종료 화면 ── */
+  #screen-ended {
+    text-align: center;
+  }
+  .end-emoji { font-size: 3rem; margin-bottom: 12px; }
+  .end-title { font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; }
+  .end-sub { color: var(--muted); font-size: 0.9rem; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- 대기 -->
+<div id="screen-waiting">
+  <div class="logo">⚡</div>
+  <div class="waiting-title">밸런스 게임</div>
+  <div class="waiting-sub">곧 시작됩니다. 준비하세요!</div>
+  <div class="pulse-dot"></div>
+</div>
+
+<!-- 문제 표시 -->
+<div id="screen-showing" class="hidden">
+  <div class="question-badge" id="q-badge">Q1 / 5</div>
+  <div class="question-text" id="showing-text"></div>
+  <div class="showing-hint">잠시 후 투표가 시작됩니다…</div>
+</div>
+
+<!-- 투표 -->
+<div id="screen-voting" class="hidden">
+  <div class="timer-bar-wrap">
+    <div class="timer-bar" id="timer-bar" style="width:100%"></div>
+  </div>
+  <div class="vote-question" id="vote-question-text"></div>
+  <div class="vote-buttons">
+    <button class="vote-btn A" id="btn-a" onclick="vote('A')">
+      <span class="btn-emoji" id="emoji-a">🍗</span>
+      <span class="btn-label" id="label-a">A</span>
+    </button>
+    <button class="vote-btn B" id="btn-b" onclick="vote('B')">
+      <span class="btn-emoji" id="emoji-b">🍕</span>
+      <span class="btn-label" id="label-b">B</span>
+    </button>
+  </div>
+</div>
+
+<!-- 결과 -->
+<div id="screen-result" class="hidden">
+  <div class="result-label">🗳️ 투표 결과</div>
+  <div class="result-question" id="result-question-text"></div>
+  <div id="voted-badge-wrap"></div>
+  <div class="result-bars">
+    <div class="result-row A">
+      <div class="side-label" id="r-label-a">A</div>
+      <div class="bar-track">
+        <div class="bar-fill A" id="bar-a" style="width:50%">50%</div>
+      </div>
+    </div>
+    <div class="result-row B">
+      <div class="side-label" id="r-label-b">B</div>
+      <div class="bar-track">
+        <div class="bar-fill B" id="bar-b" style="width:50%">50%</div>
+      </div>
+    </div>
+  </div>
+  <div class="result-total" id="result-total">총 0명 참여</div>
+</div>
+
+<!-- 종료 -->
+<div id="screen-ended" class="hidden">
+  <div class="end-emoji">🎉</div>
+  <div class="end-title">게임 종료!</div>
+  <div class="end-sub">참여해주셔서 감사합니다</div>
+</div>
+
+<script>
+const socket = io();
+let myVote = null;
+let maxTime = 15;
+
+const screens = {
+  waiting: document.getElementById('screen-waiting'),
+  showing: document.getElementById('screen-showing'),
+  voting:  document.getElementById('screen-voting'),
+  result:  document.getElementById('screen-result'),
+  ended:   document.getElementById('screen-ended'),
+};
+
+function show(name) {
+  Object.entries(screens).forEach(([k, el]) => {
+    el.classList.toggle('hidden', k !== name);
+  });
+}
+
+socket.on('state', (s) => {
+  if (s.status === 'waiting') {
+    myVote = null;
+    show('waiting');
+
+  } else if (s.status === 'showing') {
+    myVote = null;
+    document.getElementById('q-badge').textContent = `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
+    document.getElementById('showing-text').textContent =
+      `${s.currentQuestion.emoji.A} ${s.currentQuestion.A}  vs  ${s.currentQuestion.emoji.B} ${s.currentQuestion.B}`;
+    show('showing');
+
+  } else if (s.status === 'voting') {
+    const q = s.currentQuestion;
+    document.getElementById('vote-question-text').textContent =
+      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+    document.getElementById('emoji-a').textContent = q.emoji.A;
+    document.getElementById('label-a').textContent = q.A;
+    document.getElementById('emoji-b').textContent = q.emoji.B;
+    document.getElementById('label-b').textContent = q.B;
+
+    // 타이머 바
+    if (s.timeLeft > maxTime) maxTime = s.timeLeft;
+    const pct = Math.max(0, (s.timeLeft / maxTime) * 100);
+    document.getElementById('timer-bar').style.width = pct + '%';
+
+    // 버튼 상태
+    const btnA = document.getElementById('btn-a');
+    const btnB = document.getElementById('btn-b');
+    if (myVote) {
+      btnA.className = 'vote-btn A' + (myVote === 'A' ? ' selected' : ' voted');
+      btnB.className = 'vote-btn B' + (myVote === 'B' ? ' selected' : ' voted');
+    } else {
+      btnA.className = 'vote-btn A';
+      btnB.className = 'vote-btn B';
+    }
+    show('voting');
+
+  } else if (s.status === 'result') {
+    const q = s.currentQuestion;
+    document.getElementById('result-question-text').textContent =
+      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+    document.getElementById('r-label-a').textContent = q.A;
+    document.getElementById('r-label-b').textContent = q.B;
+
+    const barA = document.getElementById('bar-a');
+    const barB = document.getElementById('bar-b');
+    barA.style.width = s.pctA + '%';
+    barA.textContent = s.pctA + '%';
+    barB.style.width = s.pctB + '%';
+    barB.textContent = s.pctB + '%';
+
+    document.getElementById('result-total').textContent = `총 ${s.total}명 참여`;
+
+    const badge = document.getElementById('voted-badge-wrap');
+    if (myVote) {
+      const chosen = myVote === 'A' ? `${q.emoji.A} ${q.A}` : `${q.emoji.B} ${q.B}`;
+      badge.innerHTML = `<div class="voted-badge">✓ 나의 선택: ${chosen}</div>`;
+    } else {
+      badge.innerHTML = '';
+    }
+    show('result');
+
+  } else if (s.status === 'ended') {
+    show('ended');
+  }
+});
+
+function vote(choice) {
+  if (myVote) return;
+  myVote = choice;
+  socket.emit('vote', { choice });
+
+  const btnA = document.getElementById('btn-a');
+  const btnB = document.getElementById('btn-b');
+  btnA.className = 'vote-btn A' + (choice === 'A' ? ' selected' : ' voted');
+  btnB.className = 'vote-btn B' + (choice === 'B' ? ' selected' : ' voted');
+}
+</script>
+</body>
+</html>

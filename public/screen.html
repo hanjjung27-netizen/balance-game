@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>밸런스 게임 스크린</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d14;
+    --A: #ff6b6b;
+    --B: #4ecdc4;
+    --text: #f0f0f0;
+    --muted: #666;
+    --surface: #1a1a2e;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── 헤더 바 ── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 48px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .brand {
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    background: linear-gradient(135deg, var(--A), var(--B));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .progress-info {
+    font-size: 0.9rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .live-count {
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .live-count span {
+    color: var(--B);
+    font-weight: 700;
+  }
+
+  /* ── 메인 콘텐츠 ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 80px;
+    position: relative;
+  }
+
+  /* ── 대기 ── */
+  #screen-waiting { text-align: center; }
+  .wait-logo { font-size: 5rem; margin-bottom: 24px; }
+  .wait-title {
+    font-size: 3.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--A), var(--B));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .wait-sub { font-size: 1.3rem; color: var(--muted); }
+
+  /* ── 문제 표시 ── */
+  #screen-showing { text-align: center; width: 100%; }
+  .vs-layout {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 40px;
+    margin-top: 20px;
+  }
+  .vs-card {
+    border-radius: 28px;
+    padding: 48px 32px;
+    text-align: center;
+    animation: slideIn 0.4s ease;
+  }
+  .vs-card.A {
+    background: linear-gradient(135deg, rgba(255,107,107,0.15), rgba(238,90,36,0.1));
+    border: 2px solid rgba(255,107,107,0.3);
+  }
+  .vs-card.B {
+    background: linear-gradient(135deg, rgba(78,205,196,0.15), rgba(10,189,227,0.1));
+    border: 2px solid rgba(78,205,196,0.3);
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .vs-card .card-emoji { font-size: 4rem; margin-bottom: 16px; }
+  .vs-card .card-text { font-size: 2.2rem; font-weight: 900; }
+  .vs-card.A .card-text { color: var(--A); }
+  .vs-card.B .card-text { color: var(--B); }
+
+  .vs-divider {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+
+  .q-headline {
+    font-size: 1.3rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+  }
+  .q-sub {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-top: 24px;
+    animation: blink 1.3s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── 투표 중 ── */
+  #screen-voting { width: 100%; }
+
+  .timer-area {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .timer-circle {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin: 0 auto 16px;
+    border: 3px solid var(--B);
+    transition: border-color 0.3s;
+  }
+  .timer-circle.urgent { border-color: var(--A); color: var(--A); }
+  .timer-bar-wrap {
+    height: 8px;
+    background: var(--surface);
+    border-radius: 4px;
+    overflow: hidden;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .timer-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--B), var(--A));
+    border-radius: 4px;
+    transition: width 0.9s linear;
+  }
+
+  .voting-vs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .voting-card {
+    border-radius: 24px;
+    padding: 28px;
+    text-align: center;
+  }
+  .voting-card.A {
+    background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(238,90,36,0.12));
+    border: 2px solid rgba(255,107,107,0.4);
+  }
+  .voting-card.B {
+    background: linear-gradient(135deg, rgba(78,205,196,0.2), rgba(10,189,227,0.12));
+    border: 2px solid rgba(78,205,196,0.4);
+  }
+  .voting-card .v-emoji { font-size: 2.8rem; }
+  .voting-card .v-label { font-size: 1.6rem; font-weight: 900; margin-top: 8px; }
+  .voting-card.A .v-label { color: var(--A); }
+  .voting-card.B .v-label { color: var(--B); }
+  .voting-card .v-votes {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-top: 12px;
+    transition: all 0.3s;
+  }
+
+  /* ── 결과 ── */
+  #screen-result { width: 100%; }
+
+  .result-headline {
+    text-align: center;
+    font-size: 1rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .result-q-text {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 32px;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .result-card {
+    border-radius: 24px;
+    padding: 28px 28px 20px;
+  }
+  .result-card.A {
+    background: linear-gradient(135deg, rgba(255,107,107,0.15), rgba(238,90,36,0.08));
+    border: 2px solid rgba(255,107,107,0.35);
+  }
+  .result-card.B {
+    background: linear-gradient(135deg, rgba(78,205,196,0.15), rgba(10,189,227,0.08));
+    border: 2px solid rgba(78,205,196,0.35);
+  }
+  .rc-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .rc-emoji { font-size: 2rem; }
+  .rc-name { font-size: 1.4rem; font-weight: 900; }
+  .result-card.A .rc-name { color: var(--A); }
+  .result-card.B .rc-name { color: var(--B); }
+
+  .rc-pct {
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .result-card.A .rc-pct { color: var(--A); }
+  .result-card.B .rc-pct { color: var(--B); }
+
+  .rc-bar-track {
+    height: 12px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .rc-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+  }
+  .result-card.A .rc-bar-fill { background: linear-gradient(90deg, #ee5a24, #ff6b6b); }
+  .result-card.B .rc-bar-fill { background: linear-gradient(90deg, #0abde3, #4ecdc4); }
+  .rc-votes { font-size: 0.9rem; color: var(--muted); margin-top: 8px; }
+
+  .result-total-center {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+
+  /* ── 종료 ── */
+  #screen-ended { text-align: center; }
+  .end-big { font-size: 5rem; margin-bottom: 24px; }
+  .end-title { font-size: 3rem; font-weight: 900; margin-bottom: 12px; }
+  .end-sub { font-size: 1.2rem; color: var(--muted); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="brand">⚡ BALANCE GAME</div>
+  <div class="progress-info" id="progress-info">준비 중</div>
+  <div class="live-count">참여자 <span id="vote-count">0</span>명</div>
+</div>
+
+<div class="main">
+
+  <!-- 대기 -->
+  <div id="screen-waiting">
+    <div class="wait-logo">⚡</div>
+    <div class="wait-title">밸런스 게임</div>
+    <div class="wait-sub">QR코드를 스캔해서 참여하세요</div>
+  </div>
+
+  <!-- 문제 표시 -->
+  <div id="screen-showing" class="hidden">
+    <div class="q-headline" id="q-headline">Q1 / 5</div>
+    <div class="vs-layout">
+      <div class="vs-card A">
+        <div class="card-emoji" id="sc-emoji-a">🍗</div>
+        <div class="card-text" id="sc-label-a">A</div>
+      </div>
+      <div class="vs-divider">VS</div>
+      <div class="vs-card B">
+        <div class="card-emoji" id="sc-emoji-b">🍕</div>
+        <div class="card-text" id="sc-label-b">B</div>
+      </div>
+    </div>
+    <div class="q-sub">잠시 후 투표가 시작됩니다…</div>
+  </div>
+
+  <!-- 투표 중 -->
+  <div id="screen-voting" class="hidden">
+    <div class="timer-area">
+      <div class="timer-circle" id="timer-circle">15</div>
+      <div class="timer-bar-wrap">
+        <div class="timer-bar" id="timer-bar" style="width:100%"></div>
+      </div>
+    </div>
+    <div class="voting-vs">
+      <div class="voting-card A">
+        <div class="v-emoji" id="v-emoji-a">🍗</div>
+        <div class="v-label" id="v-label-a">A</div>
+        <div class="v-votes" id="v-votes-a">0</div>
+      </div>
+      <div class="voting-card B">
+        <div class="v-emoji" id="v-emoji-b">🍕</div>
+        <div class="v-label" id="v-label-b">B</div>
+        <div class="v-votes" id="v-votes-b">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="screen-result" class="hidden">
+    <div class="result-headline">🗳️ 투표 결과</div>
+    <div class="result-q-text" id="res-q-text"></div>
+    <div class="result-grid">
+      <div class="result-card A">
+        <div class="rc-top">
+          <span class="rc-emoji" id="res-emoji-a">🍗</span>
+          <span class="rc-name" id="res-name-a">A</span>
+        </div>
+        <div class="rc-pct" id="res-pct-a">50%</div>
+        <div class="rc-bar-track"><div class="rc-bar-fill" id="res-bar-a" style="width:50%"></div></div>
+        <div class="rc-votes" id="res-votes-a">0명</div>
+      </div>
+      <div class="result-card B">
+        <div class="rc-top">
+          <span class="rc-emoji" id="res-emoji-b">🍕</span>
+          <span class="rc-name" id="res-name-b">B</span>
+        </div>
+        <div class="rc-pct" id="res-pct-b">50%</div>
+        <div class="rc-bar-track"><div class="rc-bar-fill" id="res-bar-b" style="width:50%"></div></div>
+        <div class="rc-votes" id="res-votes-b">0명</div>
+      </div>
+    </div>
+    <div class="result-total-center" id="res-total">총 0명 참여</div>
+  </div>
+
+  <!-- 종료 -->
+  <div id="screen-ended" class="hidden">
+    <div class="end-big">🎉</div>
+    <div class="end-title">모두 수고하셨습니다!</div>
+    <div class="end-sub">참여해주셔서 감사합니다</div>
+  </div>
+
+</div>
+
+<script>
+const socket = io();
+let maxTime = 15;
+
+function show(name) {
+  ['waiting','showing','voting','result','ended'].forEach(k => {
+    document.getElementById('screen-' + k).classList.toggle('hidden', k !== name);
+  });
+}
+
+socket.on('state', (s) => {
+  document.getElementById('vote-count').textContent = s.total;
+
+  if (s.status === 'waiting') {
+    document.getElementById('progress-info').textContent = '준비 중';
+    show('waiting');
+
+  } else if (s.status === 'showing') {
+    document.getElementById('progress-info').textContent =
+      `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
+    const q = s.currentQuestion;
+    document.getElementById('q-headline').textContent =
+      `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
+    document.getElementById('sc-emoji-a').textContent = q.emoji.A;
+    document.getElementById('sc-label-a').textContent = q.A;
+    document.getElementById('sc-emoji-b').textContent = q.emoji.B;
+    document.getElementById('sc-label-b').textContent = q.B;
+    show('showing');
+
+  } else if (s.status === 'voting') {
+    const q = s.currentQuestion;
+    if (s.timeLeft > maxTime) maxTime = s.timeLeft;
+    const pct = Math.max(0, (s.timeLeft / maxTime) * 100);
+
+    document.getElementById('timer-circle').textContent = s.timeLeft;
+    document.getElementById('timer-circle').classList.toggle('urgent', s.timeLeft <= 5);
+    document.getElementById('timer-bar').style.width = pct + '%';
+
+    document.getElementById('v-emoji-a').textContent = q.emoji.A;
+    document.getElementById('v-label-a').textContent = q.A;
+    document.getElementById('v-votes-a').textContent = s.votes.A + '명';
+    document.getElementById('v-emoji-b').textContent = q.emoji.B;
+    document.getElementById('v-label-b').textContent = q.B;
+    document.getElementById('v-votes-b').textContent = s.votes.B + '명';
+    show('voting');
+
+  } else if (s.status === 'result') {
+    const q = s.currentQuestion;
+    document.getElementById('res-q-text').textContent =
+      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+
+    document.getElementById('res-emoji-a').textContent = q.emoji.A;
+    document.getElementById('res-name-a').textContent = q.A;
+    document.getElementById('res-pct-a').textContent = s.pctA + '%';
+    document.getElementById('res-bar-a').style.width = s.pctA + '%';
+    document.getElementById('res-votes-a').textContent = s.votes.A + '명';
+
+    document.getElementById('res-emoji-b').textContent = q.emoji.B;
+    document.getElementById('res-name-b').textContent = q.B;
+    document.getElementById('res-pct-b').textContent = s.pctB + '%';
+    document.getElementById('res-bar-b').style.width = s.pctB + '%';
+    document.getElementById('res-votes-b').textContent = s.votes.B + '명';
+
+    document.getElementById('res-total').textContent = `총 ${s.total}명 참여`;
+    show('result');
+
+  } else if (s.status === 'ended') {
+    document.getElementById('progress-info').textContent = '게임 종료';
+    show('ended');
+  }
+});
+</script>
+</body>
+</html>
