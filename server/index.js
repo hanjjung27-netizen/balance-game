@@ -13,19 +13,13 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // ─── 게임 상태 ───────────────────────────────────────────────────────────────
 let gameState = {
-  status: 'waiting',      // waiting | showing | voting | result | ended
+  status: 'waiting',
   currentQuestion: null,
   questionIndex: -1,
   timeLeft: 0,
   votes: { A: 0, B: 0 },
-  voters: new Set(),      // 중복 투표 방지 (socket id)
-  questions: [
-    { id: 1, A: '치킨', B: '피자', emoji: { A: '🍗', B: '🍕' } },
-    { id: 2, A: '바다', B: '산',   emoji: { A: '🌊', B: '⛰️' } },
-    { id: 3, A: '아침형 인간', B: '야행성 인간', emoji: { A: '🌅', B: '🌙' } },
-    { id: 4, A: '혼밥', B: '같이 밥', emoji: { A: '🍱', B: '👥' } },
-    { id: 5, A: '여름', B: '겨울', emoji: { A: '☀️', B: '❄️' } },
-  ]
+  voters: {},        // { [socketId]: 'A' | 'B' }  — 변경 가능하도록 Map 대신 객체
+  questions: []
 };
 
 let timer = null;
@@ -65,7 +59,6 @@ function startVotingTimer(seconds) {
 
 // ─── Socket.io ───────────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
-  // 접속 즉시 현재 상태 전송
   socket.emit('state', getPublicState());
 
   // 관리자: 다음 문제로
@@ -81,7 +74,7 @@ io.on('connection', (socket) => {
     gameState.questionIndex = nextIdx;
     gameState.currentQuestion = gameState.questions[nextIdx];
     gameState.votes = { A: 0, B: 0 };
-    gameState.voters = new Set();
+    gameState.voters = {};
     gameState.status = 'showing';
     clearTimer();
     io.emit('state', getPublicState());
@@ -95,7 +88,7 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 관리자: 결과 보기 (타이머 종료 전 강제)
+  // 관리자: 결과 공개
   socket.on('admin:showResult', () => {
     clearTimer();
     gameState.status = 'result';
@@ -109,7 +102,7 @@ io.on('connection', (socket) => {
     gameState.currentQuestion = null;
     gameState.questionIndex = -1;
     gameState.votes = { A: 0, B: 0 };
-    gameState.voters = new Set();
+    gameState.voters = {};
     gameState.timeLeft = 0;
     io.emit('state', getPublicState());
   });
@@ -126,19 +119,33 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 참여자: 투표
+  // 참여자: 투표 (변경 가능)
   socket.on('vote', ({ choice }) => {
     if (gameState.status !== 'voting') return;
-    if (gameState.voters.has(socket.id)) return; // 중복 방지
     if (choice !== 'A' && choice !== 'B') return;
 
-    gameState.voters.add(socket.id);
+    const prev = gameState.voters[socket.id];
+
+    // 이전 투표가 있으면 차감
+    if (prev) {
+      gameState.votes[prev]--;
+    }
+
+    // 새 투표 반영
+    gameState.voters[socket.id] = choice;
     gameState.votes[choice]++;
+
     io.emit('state', getPublicState());
   });
 
   socket.on('disconnect', () => {
-    gameState.voters.delete(socket.id);
+    // 연결 끊기면 투표 취소
+    const prev = gameState.voters[socket.id];
+    if (prev && gameState.votes[prev] > 0) {
+      gameState.votes[prev]--;
+    }
+    delete gameState.voters[socket.id];
+    io.emit('state', getPublicState());
   });
 });
 
