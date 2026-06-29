@@ -18,7 +18,8 @@ let gameState = {
   timeLeft: 0,
   votes: { A: 0, B: 0 },
   voters: {},
-  questions: []
+  questions: [],
+  summary: []   // 각 문제별 결과 누적
 };
 
 let timer = null;
@@ -35,6 +36,7 @@ function getPublicState() {
     total,
     pctA: total > 0 ? Math.round((gameState.votes.A / total) * 100) : 50,
     pctB: total > 0 ? Math.round((gameState.votes.B / total) * 100) : 50,
+    summary: gameState.summary,
   };
 }
 
@@ -50,10 +52,28 @@ function startVotingTimer(seconds) {
     io.emit('state', getPublicState());
     if (gameState.timeLeft <= 0) {
       clearTimer();
+      saveSummary();
       gameState.status = 'result';
       io.emit('state', getPublicState());
     }
   }, 1000);
+}
+
+// 현재 문제 결과를 summary에 저장
+function saveSummary() {
+  if (!gameState.currentQuestion) return;
+  const total = gameState.votes.A + gameState.votes.B;
+  gameState.summary.push({
+    index: gameState.questionIndex,
+    A: gameState.currentQuestion.A,
+    B: gameState.currentQuestion.B,
+    votesA: gameState.votes.A,
+    votesB: gameState.votes.B,
+    total,
+    pctA: total > 0 ? Math.round((gameState.votes.A / total) * 100) : 50,
+    pctB: total > 0 ? Math.round((gameState.votes.B / total) * 100) : 50,
+    winner: gameState.votes.A >= gameState.votes.B ? 'A' : 'B',
+  });
 }
 
 io.on('connection', (socket) => {
@@ -63,8 +83,6 @@ io.on('connection', (socket) => {
   socket.on('admin:startVote', ({ seconds }) => {
     if (gameState.status === 'voting' || gameState.status === 'ended') return;
 
-    // result 또는 showing 상태: 현재 문제 그대로 재투표
-    // waiting 상태: 다음(첫) 문제로 이동
     if (gameState.status === 'waiting' || gameState.currentQuestion === null) {
       const nextIdx = gameState.questionIndex + 1;
       if (nextIdx >= gameState.questions.length) {
@@ -78,7 +96,6 @@ io.on('connection', (socket) => {
       gameState.currentQuestion = gameState.questions[nextIdx];
     }
 
-    // 어느 경우든 투표 초기화 후 시작
     gameState.votes = { A: 0, B: 0 };
     gameState.voters = {};
     gameState.status = 'voting';
@@ -86,14 +103,15 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 결과 공개
+  // 결과 공개 (강제)
   socket.on('admin:showResult', () => {
     clearTimer();
+    saveSummary();
     gameState.status = 'result';
     io.emit('state', getPublicState());
   });
 
-  // 다음 문제 (결과 → 다음 문제 미리보기)
+  // 다음 문제
   socket.on('admin:next', () => {
     const nextIdx = gameState.questionIndex + 1;
     if (nextIdx >= gameState.questions.length) {
@@ -121,6 +139,7 @@ io.on('connection', (socket) => {
     gameState.votes = { A: 0, B: 0 };
     gameState.voters = {};
     gameState.timeLeft = 0;
+    gameState.summary = [];
     io.emit('state', getPublicState());
   });
 
