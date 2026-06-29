@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>밸런스 게임 관리자</title>
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
 
@@ -31,7 +32,6 @@
     min-height: 100vh;
   }
 
-  /* ── 헤더 ── */
   .header {
     background: var(--surface);
     border-bottom: 2px solid var(--accent);
@@ -48,13 +48,8 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 1rem; color: #fff;
   }
-  .header h1 {
-    font-size: 1.1rem;
-    font-weight: 900;
-    color: var(--accent-dark);
-  }
+  .header h1 { font-size: 1.1rem; font-weight: 900; color: var(--accent-dark); }
 
-  /* ── 레이아웃 ── */
   .layout {
     display: grid;
     grid-template-columns: 1fr 320px;
@@ -64,7 +59,6 @@
     margin: 0 auto;
   }
 
-  /* ── 카드 ── */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -84,7 +78,6 @@
     border-bottom: 1px solid var(--border);
   }
 
-  /* ── 상태 배지 ── */
   .status-badge {
     display: inline-block;
     padding: 4px 12px;
@@ -102,18 +95,8 @@
   .current-q { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; color: var(--text); }
   .current-sub { font-size: 0.82rem; color: var(--muted); }
 
-  /* ── 투표 수 ── */
-  .vote-split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 14px 0;
-  }
-  .vote-box {
-    border-radius: 10px;
-    padding: 12px 14px;
-    text-align: center;
-  }
+  .vote-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+  .vote-box { border-radius: 10px; padding: 12px 14px; text-align: center; }
   .vote-box.A { background: #fdedec; border: 1px solid rgba(231,76,60,0.25); }
   .vote-box.B { background: #eaf4fd; border: 1px solid rgba(52,152,219,0.25); }
   .vote-box .vb-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
@@ -122,7 +105,6 @@
   .vote-box.B .vb-count { color: var(--B); }
   .total-votes { font-size: 0.82rem; color: var(--muted); text-align: center; font-weight: 700; }
 
-  /* ── 버튼 ── */
   .btn {
     border: none;
     border-radius: 8px;
@@ -138,13 +120,11 @@
   .btn:active { transform: scale(0.98); }
   .btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .btn:not(:disabled):hover { box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
-
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-danger  { background: var(--A); color: #fff; }
   .btn-warning { background: #f39c12; color: #fff; }
   .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 
-  /* ── 타이머 슬라이더 ── */
   .timer-row {
     display: flex;
     align-items: center;
@@ -158,7 +138,6 @@
   .timer-row input[type=range] { flex: 1; accent-color: var(--accent); }
   .timer-row .timer-val { font-size: 0.9rem; font-weight: 900; color: var(--accent-dark); min-width: 36px; text-align: right; }
 
-  /* ── 문제 목록 ── */
   .q-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
   .q-item {
     background: var(--surface2);
@@ -185,30 +164,44 @@
   /* ── 문제 추가 폼 ── */
   .add-form { display: grid; gap: 8px; }
 
-  /* 이모지 + 선택지를 한 줄씩 묶기 */
-  .add-pair {
-    display: grid;
-    grid-template-columns: 72px 1fr;
-    gap: 8px;
-    align-items: end;
+  .xlsx-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
   }
-  .add-pair-label {
-    font-size: 0.72rem;
-    font-weight: 700;
+  .xlsx-upload-area:hover { border-color: var(--accent); background: #eafaf1; }
+  .xlsx-icon { font-size: 1.5rem; }
+  .xlsx-text { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+  .xlsx-sub  { font-size: 0.72rem; color: var(--muted); }
+
+  .divider-or {
+    text-align: center;
+    font-size: 0.75rem;
     color: var(--muted);
-    margin-bottom: 4px;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    position: relative;
+    margin: 2px 0;
   }
-  .add-pair .side-tag {
-    font-size: 0.68rem;
-    font-weight: 900;
-    padding: 2px 8px;
-    border-radius: 999px;
-    margin-bottom: 4px;
-    display: inline-block;
+  .divider-or::before, .divider-or::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 36%;
+    height: 1px;
+    background: var(--border);
   }
-  .add-pair.A .side-tag { background: #fdedec; color: var(--A); }
-  .add-pair.B .side-tag { background: #eaf4fd; color: var(--B); }
+  .divider-or::before { left: 0; }
+  .divider-or::after  { right: 0; }
+
+  .direct-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
   .input-group { display: flex; flex-direction: column; gap: 4px; }
   .input-group label { font-size: 0.72rem; color: var(--muted); font-weight: 700; }
@@ -226,7 +219,6 @@
   }
   .input-group input:focus { border-color: var(--accent); background: #fff; }
 
-  /* ── 링크 ── */
   .links-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .link-btn {
     display: block;
@@ -244,7 +236,6 @@
   .link-btn:hover { border-color: var(--accent); background: #eafaf1; }
   .link-btn span { display: block; font-size: 1.2rem; margin-bottom: 3px; }
 
-  /* ── 로그 ── */
   .log {
     background: var(--surface2);
     border: 1px solid var(--border);
@@ -275,7 +266,6 @@
 <div class="layout">
   <!-- 왼쪽 -->
   <div>
-    <!-- 현재 상태 -->
     <div class="card">
       <div class="card-title">현재 상태</div>
       <div class="status-badge waiting" id="status-badge">대기 중</div>
@@ -294,7 +284,6 @@
       <div class="total-votes" id="total-votes">총 0명 투표</div>
     </div>
 
-    <!-- 게임 제어 -->
     <div class="card">
       <div class="card-title">게임 제어</div>
       <div class="timer-row">
@@ -309,7 +298,6 @@
       <button class="btn btn-ghost"   onclick="adminReset()">🔄 처음부터</button>
     </div>
 
-    <!-- 페이지 링크 -->
     <div class="card">
       <div class="card-title">페이지 링크</div>
       <div class="links-row">
@@ -318,7 +306,6 @@
       </div>
     </div>
 
-    <!-- 이벤트 로그 -->
     <div class="card">
       <div class="card-title">이벤트 로그</div>
       <div class="log" id="log"></div>
@@ -336,32 +323,23 @@
     <div class="card">
       <div class="card-title">문제 추가</div>
       <div class="add-form">
-        <!-- A 선택지 -->
-        <div>
-          <div class="add-pair-label"><span style="color:var(--A);font-weight:900;">A</span> 선택지</div>
-          <div class="add-pair A">
-            <div class="input-group">
-              <label>이모지</label>
-              <input type="text" id="new-emoji-a" value="🔥" maxlength="4">
-            </div>
-            <div class="input-group">
-              <label>내용</label>
-              <input type="text" id="new-a" placeholder="예: 카페인">
-            </div>
+        <label class="xlsx-upload-area">
+          <input type="file" id="xlsx-input" accept=".xlsx,.xls" style="display:none" onchange="handleXlsx(this)">
+          <span class="xlsx-icon">📂</span>
+          <span class="xlsx-text">엑셀 파일 업로드 (.xlsx)</span>
+          <span class="xlsx-sub">A열: A선택지 &nbsp;|&nbsp; B열: B선택지</span>
+        </label>
+
+        <div class="divider-or">또는 직접 입력</div>
+
+        <div class="direct-row">
+          <div class="input-group">
+            <label><span style="color:var(--A);font-weight:900;">A</span> 선택지</label>
+            <input type="text" id="new-a" placeholder="예: 카페인">
           </div>
-        </div>
-        <!-- B 선택지 -->
-        <div>
-          <div class="add-pair-label"><span style="color:var(--B);font-weight:900;">B</span> 선택지</div>
-          <div class="add-pair B">
-            <div class="input-group">
-              <label>이모지</label>
-              <input type="text" id="new-emoji-b" value="💧" maxlength="4">
-            </div>
-            <div class="input-group">
-              <label>내용</label>
-              <input type="text" id="new-b" placeholder="예: 낮잠">
-            </div>
+          <div class="input-group">
+            <label><span style="color:var(--B);font-weight:900;">B</span> 선택지</label>
+            <input type="text" id="new-b" placeholder="예: 낮잠">
           </div>
         </div>
         <button class="btn btn-primary" onclick="addQuestion()">+ 추가</button>
@@ -395,7 +373,7 @@ socket.on('state', (s) => {
 
   if (s.currentQuestion) {
     const q = s.currentQuestion;
-    document.getElementById('current-q').textContent = `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+    document.getElementById('current-q').textContent = `${q.A}  vs  ${q.B}`;
     document.getElementById('current-sub').textContent = `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
     document.getElementById('vb-label-a').textContent = q.A;
     document.getElementById('vb-label-b').textContent = q.B;
@@ -432,7 +410,7 @@ function renderQList() {
     div.className = 'q-item' + (state && state.questionIndex === i ? ' active' : '');
     div.innerHTML = `
       <span class="q-num">${i + 1}</span>
-      <span class="q-text">${q.emoji.A} ${q.A} / ${q.emoji.B} ${q.B}</span>
+      <span class="q-text">${q.A} / ${q.B}</span>
       <button class="q-del" onclick="deleteQ(${i})">✕</button>
     `;
     list.appendChild(div);
@@ -442,18 +420,47 @@ function renderQList() {
 function deleteQ(i) { localQuestions.splice(i, 1); renderQList(); }
 
 function addQuestion() {
-  const eA = document.getElementById('new-emoji-a').value.trim() || '⬜';
-  const eB = document.getElementById('new-emoji-b').value.trim() || '⬜';
-  const a  = document.getElementById('new-a').value.trim();
-  const b  = document.getElementById('new-b').value.trim();
+  const a = document.getElementById('new-a').value.trim();
+  const b = document.getElementById('new-b').value.trim();
   if (!a || !b) { alert('A, B 선택지를 모두 입력하세요'); return; }
-  localQuestions.push({ id: Date.now(), A: a, B: b, emoji: { A: eA, B: eB } });
+  localQuestions.push({ id: Date.now(), A: a, B: b, emoji: { A: '⚡', B: '⚡' } });
   renderQList();
   document.getElementById('new-a').value = '';
   document.getElementById('new-b').value = '';
-  document.getElementById('new-emoji-a').value = '🔥';
-  document.getElementById('new-emoji-b').value = '💧';
   log(`문제 추가: ${a} vs ${b}`);
+}
+
+function handleXlsx(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb   = XLSX.read(data, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      let added = 0;
+      rows.forEach((row, i) => {
+        const a = String(row[0] || '').trim();
+        const b = String(row[1] || '').trim();
+        // 헤더 행 자동 스킵 (텍스트가 'A' 'B' 'A선택지' 등인 경우)
+        if (i === 0 && (!b || b === 'B' || b === 'B선택지')) return;
+        if (a && b) {
+          localQuestions.push({ id: Date.now() + i, A: a, B: b, emoji: { A: '⚡', B: '⚡' } });
+          added++;
+        }
+      });
+
+      renderQList();
+      log(`엑셀 업로드: ${added}개 문제 추가`, 'system');
+      input.value = '';
+    } catch (err) {
+      alert('엑셀 파일 읽기 실패: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function saveQuestions() {
@@ -465,11 +472,11 @@ socket.emit('admin:getQuestions');
 setTimeout(() => {
   if (localQuestions.length === 0) {
     localQuestions = [
-      { id:1, A:'치킨', B:'피자',   emoji:{ A:'🍗', B:'🍕' } },
-      { id:2, A:'바다', B:'산',     emoji:{ A:'🌊', B:'⛰️' } },
-      { id:3, A:'아침형 인간', B:'야행성 인간', emoji:{ A:'🌅', B:'🌙' } },
-      { id:4, A:'혼밥', B:'같이 밥', emoji:{ A:'🍱', B:'👥' } },
-      { id:5, A:'여름', B:'겨울',   emoji:{ A:'☀️', B:'❄️' } },
+      { id:1, A:'치킨', B:'피자',   emoji:{ A:'⚡', B:'⚡' } },
+      { id:2, A:'바다', B:'산',     emoji:{ A:'⚡', B:'⚡' } },
+      { id:3, A:'아침형 인간', B:'야행성 인간', emoji:{ A:'⚡', B:'⚡' } },
+      { id:4, A:'혼밥', B:'같이 밥', emoji:{ A:'⚡', B:'⚡' } },
+      { id:5, A:'여름', B:'겨울',   emoji:{ A:'⚡', B:'⚡' } },
     ];
     renderQList();
   }
