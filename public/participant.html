@@ -278,11 +278,15 @@ socket.on('state', (s) => {
     document.getElementById('showing-vs').textContent = `${q.A}  vs  ${q.B}`;
     show('showing');
 
-  } else if (s.status === 'voting') {
-    const q = s.currentQuestion;
-    document.getElementById('vote-question-text').textContent = `${q.A}  vs  ${q.B}`;
-    document.getElementById('label-a').textContent = q.A;
-    document.getElementById('label-b').textContent = q.B;
+} else if (s.status === 'voting') {
+  const q = s.currentQuestion;
+
+  // 문제가 바뀌면 이전 선택 초기화
+  if (!myVote || document.getElementById('label-a').textContent !== q.A) {
+    myVote = null;
+  }
+
+  document.getElementById('vote-question-text').textContent = `${q.A}  vs  ${q.B}`;
 
     if (s.timeLeft > maxTime) maxTime = s.timeLeft;
     const pct = Math.max(0, (s.timeLeft / maxTime) * 100);
