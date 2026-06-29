@@ -11,6 +11,12 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, '../public')));
 
+// ─── URL 라우팅 (.html 없이 접근) ────────────────────────────────────────────
+app.get('/participant', (req, res) => res.sendFile(path.join(__dirname, '../public/participant.html')));
+app.get('/screen',      (req, res) => res.sendFile(path.join(__dirname, '../public/screen.html')));
+app.get('/admin',       (req, res) => res.sendFile(path.join(__dirname, '../public/admin.html')));
+
+// ─── 게임 상태 ───────────────────────────────────────────────────────────────
 let gameState = {
   status: 'waiting',
   currentQuestion: null,
@@ -19,7 +25,7 @@ let gameState = {
   votes: { A: 0, B: 0 },
   voters: {},
   questions: [],
-  summary: []   // 각 문제별 결과 누적
+  summary: []
 };
 
 let timer = null;
@@ -59,7 +65,6 @@ function startVotingTimer(seconds) {
   }, 1000);
 }
 
-// 현재 문제 결과를 summary에 저장
 function saveSummary() {
   if (!gameState.currentQuestion) return;
   const total = gameState.votes.A + gameState.votes.B;
@@ -76,10 +81,10 @@ function saveSummary() {
   });
 }
 
+// ─── Socket.io ───────────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   socket.emit('state', getPublicState());
 
-  // 투표 시작
   socket.on('admin:startVote', ({ seconds }) => {
     if (gameState.status === 'voting' || gameState.status === 'ended') return;
 
@@ -103,7 +108,6 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 결과 공개 (강제)
   socket.on('admin:showResult', () => {
     clearTimer();
     saveSummary();
@@ -111,7 +115,6 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 다음 문제
   socket.on('admin:next', () => {
     const nextIdx = gameState.questionIndex + 1;
     if (nextIdx >= gameState.questions.length) {
@@ -130,7 +133,6 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 처음으로
   socket.on('admin:reset', () => {
     clearTimer();
     gameState.status = 'waiting';
@@ -173,10 +175,11 @@ io.on('connection', (socket) => {
   });
 });
 
+// ─── 시작 ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`✅ 밸런스 게임 서버 실행 중: http://localhost:${PORT}`);
-  console.log(`   참여자: /participant.html`);
-  console.log(`   스크린: /screen.html`);
-  console.log(`   관리자: /admin.html`);
+  console.log(`   참여자: /participant`);
+  console.log(`   스크린: /screen`);
+  console.log(`   관리자: /admin`);
 });
