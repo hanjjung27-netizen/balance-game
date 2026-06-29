@@ -11,14 +11,13 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ─── 게임 상태 ───────────────────────────────────────────────────────────────
 let gameState = {
   status: 'waiting',
   currentQuestion: null,
   questionIndex: -1,
   timeLeft: 0,
   votes: { A: 0, B: 0 },
-  voters: {},        // { [socketId]: 'A' | 'B' }  — 변경 가능하도록 Map 대신 객체
+  voters: {},
   questions: []
 };
 
@@ -57,11 +56,42 @@ function startVotingTimer(seconds) {
   }, 1000);
 }
 
-// ─── Socket.io ───────────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   socket.emit('state', getPublicState());
 
-  // 관리자: 다음 문제로
+  // 투표 시작 — 다음 문제로 자동 이동 후 투표 시작
+  socket.on('admin:startVote', ({ seconds }) => {
+    if (gameState.status === 'voting' || gameState.status === 'ended') return;
+
+    // 결과 or 대기 or showing 상태에서 눌렀을 때 → 다음 문제로 먼저 이동
+    if (gameState.status !== 'voting') {
+      const nextIdx = gameState.questionIndex + 1;
+      if (nextIdx >= gameState.questions.length) {
+        gameState.status = 'ended';
+        gameState.currentQuestion = null;
+        clearTimer();
+        io.emit('state', getPublicState());
+        return;
+      }
+      gameState.questionIndex = nextIdx;
+      gameState.currentQuestion = gameState.questions[nextIdx];
+      gameState.votes = { A: 0, B: 0 };
+      gameState.voters = {};
+    }
+
+    gameState.status = 'voting';
+    startVotingTimer(seconds || 15);
+    io.emit('state', getPublicState());
+  });
+
+  // 결과 공개
+  socket.on('admin:showResult', () => {
+    clearTimer();
+    gameState.status = 'result';
+    io.emit('state', getPublicState());
+  });
+
+  // 다음 문제 — 결과 화면에서 문제만 미리 보여줄 때 (선택적 사용)
   socket.on('admin:next', () => {
     const nextIdx = gameState.questionIndex + 1;
     if (nextIdx >= gameState.questions.length) {
@@ -80,22 +110,7 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 관리자: 투표 시작
-  socket.on('admin:startVote', ({ seconds }) => {
-    if (gameState.status !== 'showing') return;
-    gameState.status = 'voting';
-    startVotingTimer(seconds || 15);
-    io.emit('state', getPublicState());
-  });
-
-  // 관리자: 결과 공개
-  socket.on('admin:showResult', () => {
-    clearTimer();
-    gameState.status = 'result';
-    io.emit('state', getPublicState());
-  });
-
-  // 관리자: 처음으로
+  // 처음으로
   socket.on('admin:reset', () => {
     clearTimer();
     gameState.status = 'waiting';
@@ -107,31 +122,23 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 관리자: 문제 목록 불러오기
   socket.on('admin:getQuestions', () => {
     socket.emit('questions', gameState.questions);
   });
 
-  // 관리자: 문제 목록 업데이트
   socket.on('admin:setQuestions', (questions) => {
     gameState.questions = questions;
     io.emit('questions', gameState.questions);
     io.emit('state', getPublicState());
   });
 
-  // 참여자: 투표 (변경 가능)
+  // 참여자 투표 (변경 가능)
   socket.on('vote', ({ choice }) => {
     if (gameState.status !== 'voting') return;
     if (choice !== 'A' && choice !== 'B') return;
 
     const prev = gameState.voters[socket.id];
-
-    // 이전 투표가 있으면 차감
-    if (prev) {
-      gameState.votes[prev]--;
-    }
-
-    // 새 투표 반영
+    if (prev) gameState.votes[prev]--;
     gameState.voters[socket.id] = choice;
     gameState.votes[choice]++;
 
@@ -139,17 +146,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // 연결 끊기면 투표 취소
     const prev = gameState.voters[socket.id];
-    if (prev && gameState.votes[prev] > 0) {
-      gameState.votes[prev]--;
-    }
+    if (prev && gameState.votes[prev] > 0) gameState.votes[prev]--;
     delete gameState.voters[socket.id];
     io.emit('state', getPublicState());
   });
 });
 
-// ─── 시작 ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`✅ 밸런스 게임 서버 실행 중: http://localhost:${PORT}`);
