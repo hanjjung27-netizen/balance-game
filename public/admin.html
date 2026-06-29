@@ -161,7 +161,6 @@
   }
   .q-item .q-del:hover { color: var(--A); background: #fdedec; }
 
-  /* ── 문제 추가 폼 ── */
   .add-form { display: grid; gap: 8px; }
 
   .xlsx-upload-area {
@@ -264,7 +263,6 @@
 </div>
 
 <div class="layout">
-  <!-- 왼쪽 -->
   <div>
     <div class="card">
       <div class="card-title">현재 상태</div>
@@ -312,7 +310,6 @@
     </div>
   </div>
 
-  <!-- 오른쪽: 문제 관리 -->
   <div>
     <div class="card">
       <div class="card-title">문제 목록</div>
@@ -445,7 +442,6 @@ function handleXlsx(input) {
       rows.forEach((row, i) => {
         const a = String(row[0] || '').trim();
         const b = String(row[1] || '').trim();
-        // 헤더 행 자동 스킵 (텍스트가 'A' 'B' 'A선택지' 등인 경우)
         if (i === 0 && (!b || b === 'B' || b === 'B선택지')) return;
         if (a && b) {
           localQuestions.push({ id: Date.now() + i, A: a, B: b, emoji: { A: '⚡', B: '⚡' } });
@@ -469,18 +465,6 @@ function saveQuestions() {
 }
 
 socket.emit('admin:getQuestions');
-setTimeout(() => {
-  if (localQuestions.length === 0) {
-    localQuestions = [
-      { id:1, A:'치킨', B:'피자',   emoji:{ A:'⚡', B:'⚡' } },
-      { id:2, A:'바다', B:'산',     emoji:{ A:'⚡', B:'⚡' } },
-      { id:3, A:'아침형 인간', B:'야행성 인간', emoji:{ A:'⚡', B:'⚡' } },
-      { id:4, A:'혼밥', B:'같이 밥', emoji:{ A:'⚡', B:'⚡' } },
-      { id:5, A:'여름', B:'겨울',   emoji:{ A:'⚡', B:'⚡' } },
-    ];
-    renderQList();
-  }
-}, 500);
 log('관리자 접속', 'system');
 </script>
 </body>
