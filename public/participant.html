@@ -35,151 +35,90 @@
     user-select: none;
   }
 
-  /* ── 대기 ── */
   #screen-waiting { text-align: center; }
-  .wait-icon {
-    width: 72px; height: 72px;
-    background: var(--accent);
-    border-radius: 18px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2.2rem;
-    margin: 0 auto 18px;
-  }
+  .wait-icon { width: 72px; height: 72px; background: var(--accent); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 18px; }
   .wait-title { font-size: 1.5rem; font-weight: 900; color: var(--accent-dark); margin-bottom: 6px; }
   .wait-sub   { font-size: 0.9rem; color: var(--muted); }
-  .pulse-dot  {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--accent);
-    margin: 20px auto 0;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
+  .pulse-dot  { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin: 20px auto 0; animation: pulse 1.5s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.4} }
 
-  /* ── 문제 표시 ── */
   #screen-showing { text-align: center; width: 100%; max-width: 380px; }
-  .q-badge {
-    display: inline-block;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 999px;
-    padding: 5px 16px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    margin-bottom: 18px;
-    letter-spacing: 0.05em;
-  }
-  .showing-vs {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 24px 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-    margin-bottom: 14px;
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.7;
-  }
+  .q-badge { display: inline-block; background: var(--accent); color: #fff; border-radius: 999px; padding: 5px 16px; font-size: 0.78rem; font-weight: 700; margin-bottom: 18px; letter-spacing: 0.05em; }
+  .showing-vs { background: var(--surface); border-radius: var(--radius); padding: 24px 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 14px; font-size: 1.15rem; font-weight: 700; color: var(--text); line-height: 1.7; }
   .showing-hint { font-size: 0.85rem; color: var(--muted); animation: blink 1.2s ease-in-out infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  /* ── 투표 ── */
   #screen-voting { width: 100%; max-width: 380px; }
-
   .timer-bar-wrap { height: 6px; background: #dde3ea; border-radius: 3px; overflow: hidden; margin-bottom: 18px; }
   .timer-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius: 3px; transition: width 0.9s linear; }
-
   .vote-question { text-align: center; font-size: 1rem; font-weight: 700; margin-bottom: 20px; color: var(--text); line-height: 1.5; }
-
   .vote-buttons { display: grid; gap: 12px; }
-  .vote-btn {
-    border: none;
-    border-radius: var(--radius);
-    padding: 26px 20px;
-    font-family: inherit;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-    position: relative;
-  }
+  .vote-btn { border: none; border-radius: var(--radius); padding: 26px 20px; font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s; box-shadow: 0 3px 12px rgba(0,0,0,0.1); }
   .vote-btn:active { transform: scale(0.97); }
   .vote-btn.A { background: var(--A); color: #fff; }
   .vote-btn.B { background: var(--B); color: #fff; }
   .vote-btn .btn-label { font-size: 1.1rem; font-weight: 900; }
-
-  /* 선택됐을 때: 강조 */
-  .vote-btn.selected {
-    box-shadow: 0 0 0 4px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15);
-    transform: scale(1.02);
-  }
-  /* 선택 안 된 쪽: 흐리게 (but 클릭은 여전히 가능) */
+  .vote-btn.selected { box-shadow: 0 0 0 4px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15); transform: scale(1.02); }
   .vote-btn.dimmed { opacity: 0.45; }
+  .change-hint { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: 12px; }
 
-  /* 선택 변경 안내 */
-  .change-hint {
-    text-align: center;
-    font-size: 0.78rem;
-    color: var(--muted);
-    margin-top: 12px;
-  }
-
-  /* ── 결과 ── */
   #screen-result { width: 100%; max-width: 380px; text-align: center; }
   .result-label { font-size: 0.82rem; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 12px; }
   .result-question { font-size: 1rem; font-weight: 700; margin-bottom: 18px; color: var(--text); line-height: 1.5; }
-
-  .voted-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #eafaf1;
-    border: 1px solid var(--accent);
-    color: var(--accent-dark);
-    border-radius: 999px;
-    padding: 5px 14px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    margin-bottom: 16px;
-  }
-
+  .voted-badge { display: inline-flex; align-items: center; gap: 6px; background: #eafaf1; border: 1px solid var(--accent); color: var(--accent-dark); border-radius: 999px; padding: 5px 14px; font-size: 0.82rem; font-weight: 700; margin-bottom: 16px; }
   .result-bars { display: grid; gap: 10px; margin-bottom: 14px; }
   .result-row { display: flex; align-items: center; gap: 10px; }
-  .result-row .side-label {
-    font-size: 0.85rem; font-weight: 700;
-    width: 72px; text-align: right;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
+  .result-row .side-label { font-size: 0.85rem; font-weight: 700; width: 72px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .result-row.A .side-label { color: var(--A); }
   .result-row.B .side-label { color: var(--B); }
   .bar-track { flex: 1; height: 34px; background: #e8edf2; border-radius: 8px; overflow: hidden; }
-  .bar-fill {
-    height: 100%; border-radius: 8px;
-    display: flex; align-items: center; justify-content: flex-end;
-    padding-right: 10px;
-    font-weight: 900; font-size: 0.9rem; color: #fff;
-    transition: width 0.8s cubic-bezier(.4,0,.2,1);
-    min-width: 44px;
-  }
+  .bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-weight: 900; font-size: 0.9rem; color: #fff; transition: width 0.8s cubic-bezier(.4,0,.2,1); min-width: 44px; }
   .bar-fill.A { background: var(--A); }
   .bar-fill.B { background: var(--B); }
   .result-total { font-size: 0.82rem; color: var(--muted); font-weight: 700; }
 
-  /* ── 종료 ── */
-  #screen-ended { text-align: center; }
-  .end-icon { width: 72px; height: 72px; background: var(--accent); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 16px; }
-  .end-title { font-size: 1.4rem; font-weight: 900; color: var(--accent-dark); margin-bottom: 6px; }
-  .end-sub   { font-size: 0.88rem; color: var(--muted); }
+  /* ── 종료 요약 ── */
+  #screen-ended { width: 100%; max-width: 420px; }
+  .ended-title { font-size: 1.3rem; font-weight: 900; color: var(--accent-dark); text-align: center; margin-bottom: 4px; }
+  .ended-sub { font-size: 0.85rem; color: var(--muted); text-align: center; margin-bottom: 20px; }
+
+  .p-summary-list { display: flex; flex-direction: column; gap: 10px; }
+  .p-summary-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  }
+  .p-summary-q {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .p-summary-q .qnum { color: var(--muted); font-weight: 700; font-size: 0.72rem; }
+  .p-winner-badge { font-size: 0.68rem; font-weight: 900; padding: 2px 8px; border-radius: 999px; }
+  .p-winner-badge.A { background: #fdedec; color: var(--A); }
+  .p-winner-badge.B { background: #eaf4fd; color: var(--B); }
+  .my-pick { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #eafaf1; color: var(--accent-dark); }
+
+  .p-bars { display: grid; gap: 5px; }
+  .p-bar-row { display: flex; align-items: center; gap: 8px; }
+  .p-bar-label { font-size: 0.72rem; font-weight: 700; width: 56px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-bar-label.A { color: var(--A); }
+  .p-bar-label.B { color: var(--B); }
+  .p-bar-track { flex: 1; height: 18px; background: #e8edf2; border-radius: 4px; overflow: hidden; }
+  .p-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-size: 0.65rem; font-weight: 900; color: #fff; min-width: 28px; }
+  .p-bar-fill.A { background: var(--A); }
+  .p-bar-fill.B { background: var(--B); }
 
   .hidden { display: none !important; }
 </style>
 </head>
 <body>
 
-<!-- 대기 -->
 <div id="screen-waiting">
   <div class="wait-icon">⚡</div>
   <div class="wait-title">밸런스 게임</div>
@@ -187,14 +126,12 @@
   <div class="pulse-dot"></div>
 </div>
 
-<!-- 문제 표시 -->
 <div id="screen-showing" class="hidden">
   <div class="q-badge" id="q-badge">Q1 / 5</div>
   <div class="showing-vs" id="showing-vs"></div>
   <div class="showing-hint">잠시 후 투표가 시작됩니다…</div>
 </div>
 
-<!-- 투표 -->
 <div id="screen-voting" class="hidden">
   <div class="timer-bar-wrap">
     <div class="timer-bar" id="timer-bar" style="width:100%"></div>
@@ -211,7 +148,6 @@
   <div class="change-hint" id="change-hint"></div>
 </div>
 
-<!-- 결과 -->
 <div id="screen-result" class="hidden">
   <div class="result-label">🗳️ 투표 결과</div>
   <div class="result-question" id="result-question-text"></div>
@@ -229,17 +165,17 @@
   <div class="result-total" id="result-total">총 0명 참여</div>
 </div>
 
-<!-- 종료 -->
 <div id="screen-ended" class="hidden">
-  <div class="end-icon">🎉</div>
-  <div class="end-title">게임 종료!</div>
-  <div class="end-sub">참여해주셔서 감사합니다</div>
+  <div class="ended-title">🎉 게임 종료!</div>
+  <div class="ended-sub">전체 투표 결과 요약</div>
+  <div class="p-summary-list" id="p-summary-list"></div>
 </div>
 
 <script>
 const socket = io();
 let myVote = null;
 let maxTime = 15;
+let myVoteHistory = {};  // { questionIndex: 'A' | 'B' }
 
 function show(name) {
   ['waiting','showing','voting','result','ended'].forEach(k => {
@@ -266,9 +202,39 @@ function updateButtons() {
   }
 }
 
+function renderParticipantSummary(summary) {
+  const list = document.getElementById('p-summary-list');
+  list.innerHTML = '';
+  summary.forEach((item, i) => {
+    const myPick = myVoteHistory[item.index];
+    const myPickLabel = myPick ? (myPick === 'A' ? item.A : item.B) : null;
+    list.innerHTML += `
+      <div class="p-summary-item">
+        <div class="p-summary-q">
+          <span class="qnum">Q${i + 1}</span>
+          ${item.A} vs ${item.B}
+          <span class="p-winner-badge ${item.winner}">👑 ${item.winner === 'A' ? item.A : item.B}</span>
+          ${myPickLabel ? `<span class="my-pick">내 선택: ${myPickLabel}</span>` : ''}
+        </div>
+        <div class="p-bars">
+          <div class="p-bar-row">
+            <div class="p-bar-label A">${item.A}</div>
+            <div class="p-bar-track"><div class="p-bar-fill A" style="width:${item.pctA}%">${item.pctA}%</div></div>
+          </div>
+          <div class="p-bar-row">
+            <div class="p-bar-label B">${item.B}</div>
+            <div class="p-bar-track"><div class="p-bar-fill B" style="width:${item.pctB}%">${item.pctB}%</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
+
 socket.on('state', (s) => {
   if (s.status === 'waiting') {
     myVote = null;
+    myVoteHistory = {};
     show('waiting');
 
   } else if (s.status === 'showing') {
@@ -278,15 +244,17 @@ socket.on('state', (s) => {
     document.getElementById('showing-vs').textContent = `${q.A}  vs  ${q.B}`;
     show('showing');
 
-} else if (s.status === 'voting') {
-  const q = s.currentQuestion;
+  } else if (s.status === 'voting') {
+    const q = s.currentQuestion;
 
-  // 문제가 바뀌면 이전 선택 초기화
-  if (!myVote || document.getElementById('label-a').textContent !== q.A) {
-    myVote = null;
-  }
+    // 문제가 바뀌면 선택 초기화
+    if (document.getElementById('label-a').textContent !== q.A) {
+      myVote = null;
+    }
 
-  document.getElementById('vote-question-text').textContent = `${q.A}  vs  ${q.B}`;
+    document.getElementById('vote-question-text').textContent = `${q.A}  vs  ${q.B}`;
+    document.getElementById('label-a').textContent = q.A;
+    document.getElementById('label-b').textContent = q.B;
 
     if (s.timeLeft > maxTime) maxTime = s.timeLeft;
     const pct = Math.max(0, (s.timeLeft / maxTime) * 100);
@@ -316,17 +284,26 @@ socket.on('state', (s) => {
     show('result');
 
   } else if (s.status === 'ended') {
+    renderParticipantSummary(s.summary || []);
     show('ended');
   }
 });
 
 function vote(choice) {
-  // 같은 거 또 누르면 무시
   if (myVote === choice) return;
+  const q = document.getElementById('label-a').textContent;
   myVote = choice;
+
+  // 현재 문제 인덱스 기록 (서버 state에서 받은 값 활용)
   socket.emit('vote', { choice });
   updateButtons();
 }
+
+socket.on('state', (s) => {
+  if (s.status === 'voting' && myVote) {
+    myVoteHistory[s.questionIndex] = myVote;
+  }
+});
 </script>
 </body>
 </html>
