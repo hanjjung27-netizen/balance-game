@@ -59,12 +59,13 @@ function startVotingTimer(seconds) {
 io.on('connection', (socket) => {
   socket.emit('state', getPublicState());
 
-  // 투표 시작 — 다음 문제로 자동 이동 후 투표 시작
+  // 투표 시작
   socket.on('admin:startVote', ({ seconds }) => {
     if (gameState.status === 'voting' || gameState.status === 'ended') return;
 
-    // 결과 or 대기 or showing 상태에서 눌렀을 때 → 다음 문제로 먼저 이동
-    if (gameState.status !== 'voting') {
+    // result 또는 showing 상태: 현재 문제 그대로 재투표
+    // waiting 상태: 다음(첫) 문제로 이동
+    if (gameState.status === 'waiting' || gameState.currentQuestion === null) {
       const nextIdx = gameState.questionIndex + 1;
       if (nextIdx >= gameState.questions.length) {
         gameState.status = 'ended';
@@ -75,10 +76,11 @@ io.on('connection', (socket) => {
       }
       gameState.questionIndex = nextIdx;
       gameState.currentQuestion = gameState.questions[nextIdx];
-      gameState.votes = { A: 0, B: 0 };
-      gameState.voters = {};
     }
 
+    // 어느 경우든 투표 초기화 후 시작
+    gameState.votes = { A: 0, B: 0 };
+    gameState.voters = {};
     gameState.status = 'voting';
     startVotingTimer(seconds || 15);
     io.emit('state', getPublicState());
@@ -91,7 +93,7 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 다음 문제 — 결과 화면에서 문제만 미리 보여줄 때 (선택적 사용)
+  // 다음 문제 (결과 → 다음 문제 미리보기)
   socket.on('admin:next', () => {
     const nextIdx = gameState.questionIndex + 1;
     if (nextIdx >= gameState.questions.length) {
@@ -132,7 +134,6 @@ io.on('connection', (socket) => {
     io.emit('state', getPublicState());
   });
 
-  // 참여자 투표 (변경 가능)
   socket.on('vote', ({ choice }) => {
     if (gameState.status !== 'voting') return;
     if (choice !== 'A' && choice !== 'B') return;
