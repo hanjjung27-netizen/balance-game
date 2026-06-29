@@ -11,15 +11,17 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #0d0d14;
-    --surface: #1a1a2e;
-    --surface2: #242438;
-    --A: #ff6b6b;
-    --B: #4ecdc4;
-    --text: #f0f0f0;
-    --muted: #777;
-    --border: rgba(255,255,255,0.08);
-    --radius: 14px;
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #e8edf2;
+    --A: #e74c3c;
+    --B: #3498db;
+    --accent: #1abc9c;
+    --accent-dark: #16a085;
+    --text: #2c3e50;
+    --muted: #7f8c8d;
+    --border: rgba(0,0,0,0.08);
+    --radius: 12px;
   }
 
   body {
@@ -27,39 +29,59 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 24px;
   }
 
-  h1 {
-    font-size: 1.3rem;
+  /* ── 헤더 ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .header-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: #fff;
+  }
+  .header h1 {
+    font-size: 1.1rem;
     font-weight: 900;
-    background: linear-gradient(135deg, var(--A), var(--B));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 24px;
+    color: var(--accent-dark);
   }
 
+  /* ── 레이아웃 ── */
   .layout {
     display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 20px;
-    max-width: 1100px;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
+  /* ── 카드 ── */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
   .card-title {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: var(--muted);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
   }
 
   /* ── 상태 배지 ── */
@@ -67,184 +89,176 @@
     display: inline-block;
     padding: 4px 12px;
     border-radius: 999px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 700;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
-  .status-badge.waiting { background: rgba(119,119,119,0.2); color: var(--muted); }
-  .status-badge.showing { background: rgba(255,212,59,0.2); color: #ffd43b; }
-  .status-badge.voting  { background: rgba(78,205,196,0.2); color: var(--B); }
-  .status-badge.result  { background: rgba(255,107,107,0.2); color: var(--A); }
-  .status-badge.ended   { background: rgba(119,119,119,0.2); color: var(--muted); }
+  .status-badge.waiting { background: #ecf0f1; color: var(--muted); }
+  .status-badge.showing { background: #fef9e7; color: #f39c12; border: 1px solid #f39c12; }
+  .status-badge.voting  { background: #eafaf1; color: var(--accent-dark); border: 1px solid var(--accent); }
+  .status-badge.result  { background: #fdedec; color: var(--A); border: 1px solid var(--A); }
+  .status-badge.ended   { background: #ecf0f1; color: var(--muted); }
 
-  /* ── 현재 문제 미리보기 ── */
-  .current-q {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-  .current-sub { font-size: 0.85rem; color: var(--muted); }
+  .current-q { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .current-sub { font-size: 0.82rem; color: var(--muted); }
 
   /* ── 투표 수 ── */
   .vote-split {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
     margin: 14px 0;
   }
   .vote-box {
     border-radius: 10px;
-    padding: 12px 16px;
+    padding: 12px 14px;
     text-align: center;
   }
-  .vote-box.A { background: rgba(255,107,107,0.12); border: 1px solid rgba(255,107,107,0.25); }
-  .vote-box.B { background: rgba(78,205,196,0.12);  border: 1px solid rgba(78,205,196,0.25); }
-  .vote-box .vb-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
-  .vote-box .vb-count { font-size: 1.8rem; font-weight: 900; }
+  .vote-box.A { background: #fdedec; border: 1px solid rgba(231,76,60,0.25); }
+  .vote-box.B { background: #eaf4fd; border: 1px solid rgba(52,152,219,0.25); }
+  .vote-box .vb-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+  .vote-box .vb-count { font-size: 1.8rem; font-weight: 900; line-height: 1; }
   .vote-box.A .vb-count { color: var(--A); }
   .vote-box.B .vb-count { color: var(--B); }
-  .total-votes { font-size: 0.85rem; color: var(--muted); text-align: center; }
+  .total-votes { font-size: 0.82rem; color: var(--muted); text-align: center; font-weight: 700; }
 
   /* ── 버튼 ── */
   .btn {
     border: none;
-    border-radius: 10px;
-    padding: 12px 20px;
+    border-radius: 8px;
+    padding: 11px 18px;
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
+    transition: transform 0.1s, opacity 0.2s, box-shadow 0.1s;
     width: 100%;
     margin-bottom: 8px;
   }
-  .btn:active { transform: scale(0.97); }
+  .btn:active { transform: scale(0.98); }
   .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn:not(:disabled):hover { box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
 
-  .btn-primary {
-    background: linear-gradient(135deg, var(--B), #0abde3);
-    color: #fff;
-  }
-  .btn-danger {
-    background: linear-gradient(135deg, var(--A), #ee5a24);
-    color: #fff;
-  }
-  .btn-warning {
-    background: linear-gradient(135deg, #ffd43b, #f9ca24);
-    color: #222;
-  }
-  .btn-ghost {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-danger  { background: var(--A); color: #fff; }
+  .btn-warning { background: #f39c12; color: #fff; }
+  .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 
-  /* ── 타이머 설정 ── */
+  /* ── 타이머 슬라이더 ── */
   .timer-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 14px;
   }
-  .timer-row label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
-  .timer-row input[type=range] { flex: 1; accent-color: var(--B); }
-  .timer-row .timer-val {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--B);
-    min-width: 36px;
-    text-align: right;
-  }
+  .timer-row label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; font-weight: 700; }
+  .timer-row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .timer-row .timer-val { font-size: 0.9rem; font-weight: 900; color: var(--accent-dark); min-width: 36px; text-align: right; }
 
   /* ── 문제 목록 ── */
-  .q-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .q-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
   .q-item {
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
+    border-radius: 8px;
+    padding: 9px 12px;
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  .q-item.active { border-color: var(--B); }
-  .q-item .q-num {
-    font-size: 0.75rem;
-    color: var(--muted);
-    min-width: 24px;
-    font-weight: 700;
-  }
-  .q-item .q-text { flex: 1; font-size: 0.85rem; }
+  .q-item.active { border-color: var(--accent); background: #eafaf1; }
+  .q-item .q-num { font-size: 0.72rem; color: var(--muted); min-width: 20px; font-weight: 700; }
+  .q-item .q-text { flex: 1; font-size: 0.82rem; color: var(--text); }
   .q-item .q-del {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 2px 6px;
+    background: none; border: none;
+    color: #bdc3c7; cursor: pointer;
+    font-size: 0.9rem; padding: 2px 6px;
     border-radius: 4px;
-    transition: color 0.2s;
+    transition: color 0.2s, background 0.2s;
+    line-height: 1;
   }
-  .q-item .q-del:hover { color: var(--A); }
+  .q-item .q-del:hover { color: var(--A); background: #fdedec; }
 
   /* ── 문제 추가 폼 ── */
   .add-form { display: grid; gap: 8px; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* 이모지 + 선택지를 한 줄씩 묶기 */
+  .add-pair {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 8px;
+    align-items: end;
+  }
+  .add-pair-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+  .add-pair .side-tag {
+    font-size: 0.68rem;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 4px;
+    display: inline-block;
+  }
+  .add-pair.A .side-tag { background: #fdedec; color: var(--A); }
+  .add-pair.B .side-tag { background: #eaf4fd; color: var(--B); }
+
   .input-group { display: flex; flex-direction: column; gap: 4px; }
-  .input-group label { font-size: 0.75rem; color: var(--muted); }
+  .input-group label { font-size: 0.72rem; color: var(--muted); font-weight: 700; }
   .input-group input {
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 7px;
     padding: 8px 10px;
     color: var(--text);
     font-family: inherit;
     font-size: 0.85rem;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
   }
-  .input-group input:focus { border-color: var(--B); }
-
-  /* ── 이벤트 로그 ── */
-  .log {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 0.75rem;
-    color: var(--muted);
-    height: 120px;
-    overflow-y: auto;
-    font-family: monospace;
-    line-height: 1.7;
-  }
-  .log-entry { display: block; }
-  .log-entry.action { color: var(--B); }
-  .log-entry.vote { color: #888; }
-  .log-entry.system { color: #ffd43b; }
+  .input-group input:focus { border-color: var(--accent); background: #fff; }
 
   /* ── 링크 ── */
-  .links-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 0;
-  }
+  .links-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .link-btn {
     display: block;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 10px;
+    padding: 12px;
     text-align: center;
     text-decoration: none;
     color: var(--text);
     font-size: 0.8rem;
     font-weight: 700;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
   }
-  .link-btn:hover { border-color: var(--B); }
-  .link-btn span { display: block; font-size: 1.1rem; margin-bottom: 2px; }
+  .link-btn:hover { border-color: var(--accent); background: #eafaf1; }
+  .link-btn span { display: block; font-size: 1.2rem; margin-bottom: 3px; }
+
+  /* ── 로그 ── */
+  .log {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.73rem;
+    color: var(--muted);
+    height: 110px;
+    overflow-y: auto;
+    font-family: monospace;
+    line-height: 1.8;
+  }
+  .log-entry.action { color: var(--accent-dark); }
+  .log-entry.system { color: #f39c12; }
 
   @media (max-width: 700px) {
     .layout { grid-template-columns: 1fr; }
@@ -253,7 +267,10 @@
 </head>
 <body>
 
-<h1>⚡ 밸런스 게임 관리자</h1>
+<div class="header">
+  <div class="header-icon">⚡</div>
+  <h1>밸런스 게임 관리자</h1>
+</div>
 
 <div class="layout">
   <!-- 왼쪽 -->
@@ -264,7 +281,6 @@
       <div class="status-badge waiting" id="status-badge">대기 중</div>
       <div class="current-q" id="current-q">문제가 없습니다</div>
       <div class="current-sub" id="current-sub">다음 문제 버튼을 눌러 시작하세요</div>
-
       <div class="vote-split">
         <div class="vote-box A">
           <div class="vb-label" id="vb-label-a">A 팀</div>
@@ -278,33 +294,27 @@
       <div class="total-votes" id="total-votes">총 0명 투표</div>
     </div>
 
-    <!-- 제어 -->
+    <!-- 게임 제어 -->
     <div class="card">
       <div class="card-title">게임 제어</div>
-
       <div class="timer-row">
         <label>투표 시간</label>
         <input type="range" id="timer-range" min="5" max="60" value="15" step="5"
           oninput="document.getElementById('timer-val').textContent=this.value+'초'">
         <span class="timer-val" id="timer-val">15초</span>
       </div>
-
-      <button class="btn btn-primary" id="btn-next" onclick="adminNext()">⏭ 다음 문제</button>
-      <button class="btn btn-warning" id="btn-vote" onclick="adminStartVote()" disabled>🗳 투표 시작</button>
+      <button class="btn btn-primary" id="btn-next"   onclick="adminNext()">⏭ 다음 문제</button>
+      <button class="btn btn-warning" id="btn-vote"   onclick="adminStartVote()" disabled>🗳 투표 시작</button>
       <button class="btn btn-danger"  id="btn-result" onclick="adminShowResult()" disabled>📊 결과 공개</button>
       <button class="btn btn-ghost"   onclick="adminReset()">🔄 처음부터</button>
     </div>
 
-    <!-- 링크 -->
+    <!-- 페이지 링크 -->
     <div class="card">
       <div class="card-title">페이지 링크</div>
       <div class="links-row">
-        <a href="/participant.html" target="_blank" class="link-btn">
-          <span>📱</span>참여자
-        </a>
-        <a href="/screen.html" target="_blank" class="link-btn">
-          <span>🖥</span>스크린
-        </a>
+        <a href="/participant.html" target="_blank" class="link-btn"><span>📱</span>참여자</a>
+        <a href="/screen.html"     target="_blank" class="link-btn"><span>🖥</span>스크린</a>
       </div>
     </div>
 
@@ -320,30 +330,38 @@
     <div class="card">
       <div class="card-title">문제 목록</div>
       <div class="q-list" id="q-list"></div>
-      <button class="btn btn-ghost" onclick="saveQuestions()" style="margin-top:4px">💾 목록 저장 (서버 반영)</button>
+      <button class="btn btn-ghost" onclick="saveQuestions()">💾 목록 저장 (서버 반영)</button>
     </div>
 
     <div class="card">
       <div class="card-title">문제 추가</div>
       <div class="add-form">
-        <div class="form-row">
-          <div class="input-group">
-            <label>A 이모지</label>
-            <input type="text" id="new-emoji-a" value="🔥" maxlength="4">
-          </div>
-          <div class="input-group">
-            <label>B 이모지</label>
-            <input type="text" id="new-emoji-b" value="💧" maxlength="4">
+        <!-- A 선택지 -->
+        <div>
+          <div class="add-pair-label"><span style="color:var(--A);font-weight:900;">A</span> 선택지</div>
+          <div class="add-pair A">
+            <div class="input-group">
+              <label>이모지</label>
+              <input type="text" id="new-emoji-a" value="🔥" maxlength="4">
+            </div>
+            <div class="input-group">
+              <label>내용</label>
+              <input type="text" id="new-a" placeholder="예: 카페인">
+            </div>
           </div>
         </div>
-        <div class="form-row">
-          <div class="input-group">
-            <label>A 선택지</label>
-            <input type="text" id="new-a" placeholder="예: 카페인">
-          </div>
-          <div class="input-group">
-            <label>B 선택지</label>
-            <input type="text" id="new-b" placeholder="예: 낮잠">
+        <!-- B 선택지 -->
+        <div>
+          <div class="add-pair-label"><span style="color:var(--B);font-weight:900;">B</span> 선택지</div>
+          <div class="add-pair B">
+            <div class="input-group">
+              <label>이모지</label>
+              <input type="text" id="new-emoji-b" value="💧" maxlength="4">
+            </div>
+            <div class="input-group">
+              <label>내용</label>
+              <input type="text" id="new-b" placeholder="예: 낮잠">
+            </div>
           </div>
         </div>
         <button class="btn btn-primary" onclick="addQuestion()">+ 추가</button>
@@ -357,7 +375,6 @@ const socket = io();
 let state = null;
 let localQuestions = [];
 
-// ── 로그 ──────────────────────────────────────────────────────────────────
 function log(msg, type = 'action') {
   const box = document.getElementById('log');
   const now = new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
@@ -369,44 +386,32 @@ function log(msg, type = 'action') {
   box.scrollTop = box.scrollHeight;
 }
 
-// ── 상태 업데이트 ─────────────────────────────────────────────────────────
 socket.on('state', (s) => {
   state = s;
-
-  // 배지
   const badge = document.getElementById('status-badge');
   const labels = { waiting:'대기 중', showing:'문제 표시', voting:'투표 중', result:'결과 표시', ended:'종료' };
   badge.textContent = labels[s.status] || s.status;
   badge.className = 'status-badge ' + s.status;
 
-  // 현재 문제
   if (s.currentQuestion) {
     const q = s.currentQuestion;
-    document.getElementById('current-q').textContent =
-      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
-    document.getElementById('current-sub').textContent =
-      `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
+    document.getElementById('current-q').textContent = `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+    document.getElementById('current-sub').textContent = `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
     document.getElementById('vb-label-a').textContent = q.A;
     document.getElementById('vb-label-b').textContent = q.B;
   } else {
     document.getElementById('current-q').textContent = '문제가 없습니다';
     document.getElementById('current-sub').textContent = '다음 문제 버튼을 눌러 시작하세요';
   }
-
   document.getElementById('vb-count-a').textContent = s.votes.A;
   document.getElementById('vb-count-b').textContent = s.votes.B;
   document.getElementById('total-votes').textContent = `총 ${s.total}명 투표`;
 
-  // 버튼 활성화
-  document.getElementById('btn-next').disabled =
-    (s.status === 'voting' || s.status === 'ended');
-  document.getElementById('btn-vote').disabled = (s.status !== 'showing');
+  document.getElementById('btn-next').disabled   = (s.status === 'voting' || s.status === 'ended');
+  document.getElementById('btn-vote').disabled   = (s.status !== 'showing');
   document.getElementById('btn-result').disabled = (s.status !== 'voting');
 
-  // 초기 문제 목록 동기화
-  if (localQuestions.length === 0 && s.totalQuestions > 0) {
-    // 서버에서 목록을 못 받으므로 별도 이벤트로 처리
-  }
+  renderQList();
 });
 
 socket.on('questions', (qs) => {
@@ -414,27 +419,11 @@ socket.on('questions', (qs) => {
   renderQList();
 });
 
-// ── 제어 ──────────────────────────────────────────────────────────────────
-function adminNext() {
-  socket.emit('admin:next');
-  log('다음 문제로 이동');
-}
-function adminStartVote() {
-  const sec = parseInt(document.getElementById('timer-range').value);
-  socket.emit('admin:startVote', { seconds: sec });
-  log(`투표 시작 (${sec}초)`);
-}
-function adminShowResult() {
-  socket.emit('admin:showResult');
-  log('결과 공개');
-}
-function adminReset() {
-  if (!confirm('처음부터 다시 시작하시겠습니까?')) return;
-  socket.emit('admin:reset');
-  log('게임 리셋', 'system');
-}
+function adminNext()       { socket.emit('admin:next'); log('다음 문제로 이동'); }
+function adminStartVote()  { const sec = parseInt(document.getElementById('timer-range').value); socket.emit('admin:startVote', { seconds: sec }); log(`투표 시작 (${sec}초)`); }
+function adminShowResult() { socket.emit('admin:showResult'); log('결과 공개'); }
+function adminReset()      { if (!confirm('처음부터 다시 시작하시겠습니까?')) return; socket.emit('admin:reset'); log('게임 리셋', 'system'); }
 
-// ── 문제 관리 ─────────────────────────────────────────────────────────────
 function renderQList() {
   const list = document.getElementById('q-list');
   list.innerHTML = '';
@@ -450,10 +439,7 @@ function renderQList() {
   });
 }
 
-function deleteQ(i) {
-  localQuestions.splice(i, 1);
-  renderQList();
-}
+function deleteQ(i) { localQuestions.splice(i, 1); renderQList(); }
 
 function addQuestion() {
   const eA = document.getElementById('new-emoji-a').value.trim() || '⬜';
@@ -461,12 +447,7 @@ function addQuestion() {
   const a  = document.getElementById('new-a').value.trim();
   const b  = document.getElementById('new-b').value.trim();
   if (!a || !b) { alert('A, B 선택지를 모두 입력하세요'); return; }
-
-  localQuestions.push({
-    id: Date.now(),
-    A: a, B: b,
-    emoji: { A: eA, B: eB }
-  });
+  localQuestions.push({ id: Date.now(), A: a, B: b, emoji: { A: eA, B: eB } });
   renderQList();
   document.getElementById('new-a').value = '';
   document.getElementById('new-b').value = '';
@@ -480,28 +461,19 @@ function saveQuestions() {
   log(`문제 목록 저장 (${localQuestions.length}개)`, 'system');
 }
 
-// ── 초기화 ────────────────────────────────────────────────────────────────
-// 서버에서 초기 문제 목록 불러오기
 socket.emit('admin:getQuestions');
-socket.on('questions', (qs) => {
-  localQuestions = JSON.parse(JSON.stringify(qs));
-  renderQList();
-});
-
-// 서버에 getQuestions 이벤트 없으므로 기본 목록 직접 세팅
 setTimeout(() => {
   if (localQuestions.length === 0) {
     localQuestions = [
-      { id:1, A:'치킨', B:'피자', emoji:{ A:'🍗', B:'🍕' } },
-      { id:2, A:'바다', B:'산',   emoji:{ A:'🌊', B:'⛰️' } },
+      { id:1, A:'치킨', B:'피자',   emoji:{ A:'🍗', B:'🍕' } },
+      { id:2, A:'바다', B:'산',     emoji:{ A:'🌊', B:'⛰️' } },
       { id:3, A:'아침형 인간', B:'야행성 인간', emoji:{ A:'🌅', B:'🌙' } },
       { id:4, A:'혼밥', B:'같이 밥', emoji:{ A:'🍱', B:'👥' } },
-      { id:5, A:'여름', B:'겨울', emoji:{ A:'☀️', B:'❄️' } },
+      { id:5, A:'여름', B:'겨울',   emoji:{ A:'☀️', B:'❄️' } },
     ];
     renderQList();
   }
 }, 500);
-
 log('관리자 접속', 'system');
 </script>
 </body>
