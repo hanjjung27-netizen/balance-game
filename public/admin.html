@@ -268,7 +268,7 @@
       <div class="card-title">현재 상태</div>
       <div class="status-badge waiting" id="status-badge">대기 중</div>
       <div class="current-q" id="current-q">문제가 없습니다</div>
-      <div class="current-sub" id="current-sub">다음 문제 버튼을 눌러 시작하세요</div>
+      <div class="current-sub" id="current-sub">투표 시작 버튼을 눌러 시작하세요</div>
       <div class="vote-split">
         <div class="vote-box A">
           <div class="vb-label" id="vb-label-a">A 팀</div>
@@ -290,9 +290,9 @@
           oninput="document.getElementById('timer-val').textContent=this.value+'초'">
         <span class="timer-val" id="timer-val">15초</span>
       </div>
-      <button class="btn btn-primary" id="btn-next"   onclick="adminNext()">⏭ 다음 문제</button>
-      <button class="btn btn-warning" id="btn-vote"   onclick="adminStartVote()" disabled>🗳 투표 시작</button>
+      <button class="btn btn-warning" id="btn-vote"   onclick="adminStartVote()">🗳 투표 시작</button>
       <button class="btn btn-danger"  id="btn-result" onclick="adminShowResult()" disabled>📊 결과 공개</button>
+      <button class="btn btn-primary" id="btn-next"   onclick="adminNext()" disabled>⏭ 다음 문제</button>
       <button class="btn btn-ghost"   onclick="adminReset()">🔄 처음부터</button>
     </div>
 
@@ -376,15 +376,19 @@ socket.on('state', (s) => {
     document.getElementById('vb-label-b').textContent = q.B;
   } else {
     document.getElementById('current-q').textContent = '문제가 없습니다';
-    document.getElementById('current-sub').textContent = '다음 문제 버튼을 눌러 시작하세요';
+    document.getElementById('current-sub').textContent = '투표 시작 버튼을 눌러 시작하세요';
   }
   document.getElementById('vb-count-a').textContent = s.votes.A;
   document.getElementById('vb-count-b').textContent = s.votes.B;
   document.getElementById('total-votes').textContent = `총 ${s.total}명 투표`;
 
-  document.getElementById('btn-next').disabled   = (s.status === 'voting' || s.status === 'ended');
-  document.getElementById('btn-vote').disabled   = (s.status !== 'showing');
+  // 버튼 활성화 조건
+  // 투표 시작: 투표 중이거나 종료됐을 때만 비활성
+  document.getElementById('btn-vote').disabled   = (s.status === 'voting' || s.status === 'ended');
+  // 결과 공개: 투표 중일 때만 활성
   document.getElementById('btn-result').disabled = (s.status !== 'voting');
+  // 다음 문제: 결과 표시 중일 때만 활성
+  document.getElementById('btn-next').disabled   = (s.status !== 'result');
 
   renderQList();
 });
@@ -394,9 +398,13 @@ socket.on('questions', (qs) => {
   renderQList();
 });
 
-function adminNext()       { socket.emit('admin:next'); log('다음 문제로 이동'); }
-function adminStartVote()  { const sec = parseInt(document.getElementById('timer-range').value); socket.emit('admin:startVote', { seconds: sec }); log(`투표 시작 (${sec}초)`); }
+function adminStartVote() {
+  const sec = parseInt(document.getElementById('timer-range').value);
+  socket.emit('admin:startVote', { seconds: sec });
+  log(`투표 시작 (${sec}초)`);
+}
 function adminShowResult() { socket.emit('admin:showResult'); log('결과 공개'); }
+function adminNext()       { socket.emit('admin:next'); log('다음 문제로 이동'); }
 function adminReset()      { if (!confirm('처음부터 다시 시작하시겠습니까?')) return; socket.emit('admin:reset'); log('게임 리셋', 'system'); }
 
 function renderQList() {
