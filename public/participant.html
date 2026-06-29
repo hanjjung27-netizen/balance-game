@@ -102,16 +102,30 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    transition: transform 0.12s, box-shadow 0.12s;
+    transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
     box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    position: relative;
   }
   .vote-btn:active { transform: scale(0.97); }
   .vote-btn.A { background: var(--A); color: #fff; }
   .vote-btn.B { background: var(--B); color: #fff; }
-  .vote-btn .btn-emoji { font-size: 2rem; }
   .vote-btn .btn-label { font-size: 1.1rem; font-weight: 900; }
-  .vote-btn.voted   { opacity: 0.35; cursor: not-allowed; pointer-events: none; box-shadow: none; }
-  .vote-btn.selected { box-shadow: 0 0 0 4px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.15); }
+
+  /* 선택됐을 때: 강조 */
+  .vote-btn.selected {
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15);
+    transform: scale(1.02);
+  }
+  /* 선택 안 된 쪽: 흐리게 (but 클릭은 여전히 가능) */
+  .vote-btn.dimmed { opacity: 0.45; }
+
+  /* 선택 변경 안내 */
+  .change-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 12px;
+  }
 
   /* ── 결과 ── */
   #screen-result { width: 100%; max-width: 380px; text-align: center; }
@@ -188,14 +202,13 @@
   <div class="vote-question" id="vote-question-text"></div>
   <div class="vote-buttons">
     <button class="vote-btn A" id="btn-a" onclick="vote('A')">
-      <span class="btn-emoji" id="emoji-a">🍗</span>
       <span class="btn-label" id="label-a">A</span>
     </button>
     <button class="vote-btn B" id="btn-b" onclick="vote('B')">
-      <span class="btn-emoji" id="emoji-b">🍕</span>
       <span class="btn-label" id="label-b">B</span>
     </button>
   </div>
+  <div class="change-hint" id="change-hint"></div>
 </div>
 
 <!-- 결과 -->
@@ -234,46 +247,53 @@ function show(name) {
   });
 }
 
+function updateButtons() {
+  const btnA = document.getElementById('btn-a');
+  const btnB = document.getElementById('btn-b');
+  const hint = document.getElementById('change-hint');
+  if (myVote === 'A') {
+    btnA.className = 'vote-btn A selected';
+    btnB.className = 'vote-btn B dimmed';
+    hint.textContent = '다시 눌러서 선택을 바꿀 수 있어요';
+  } else if (myVote === 'B') {
+    btnA.className = 'vote-btn A dimmed';
+    btnB.className = 'vote-btn B selected';
+    hint.textContent = '다시 눌러서 선택을 바꿀 수 있어요';
+  } else {
+    btnA.className = 'vote-btn A';
+    btnB.className = 'vote-btn B';
+    hint.textContent = '';
+  }
+}
+
 socket.on('state', (s) => {
   if (s.status === 'waiting') {
-    myVote = null; show('waiting');
+    myVote = null;
+    show('waiting');
 
   } else if (s.status === 'showing') {
     myVote = null;
     const q = s.currentQuestion;
     document.getElementById('q-badge').textContent = `Q${s.questionIndex + 1} / ${s.totalQuestions}`;
-    document.getElementById('showing-vs').textContent =
-      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+    document.getElementById('showing-vs').textContent = `${q.A}  vs  ${q.B}`;
     show('showing');
 
   } else if (s.status === 'voting') {
     const q = s.currentQuestion;
-    document.getElementById('vote-question-text').textContent =
-      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
-    document.getElementById('emoji-a').textContent = q.emoji.A;
+    document.getElementById('vote-question-text').textContent = `${q.A}  vs  ${q.B}`;
     document.getElementById('label-a').textContent = q.A;
-    document.getElementById('emoji-b').textContent = q.emoji.B;
     document.getElementById('label-b').textContent = q.B;
 
     if (s.timeLeft > maxTime) maxTime = s.timeLeft;
     const pct = Math.max(0, (s.timeLeft / maxTime) * 100);
     document.getElementById('timer-bar').style.width = pct + '%';
 
-    const btnA = document.getElementById('btn-a');
-    const btnB = document.getElementById('btn-b');
-    if (myVote) {
-      btnA.className = 'vote-btn A' + (myVote === 'A' ? ' selected' : ' voted');
-      btnB.className = 'vote-btn B' + (myVote === 'B' ? ' selected' : ' voted');
-    } else {
-      btnA.className = 'vote-btn A';
-      btnB.className = 'vote-btn B';
-    }
+    updateButtons();
     show('voting');
 
   } else if (s.status === 'result') {
     const q = s.currentQuestion;
-    document.getElementById('result-question-text').textContent =
-      `${q.emoji.A} ${q.A}  vs  ${q.emoji.B} ${q.B}`;
+    document.getElementById('result-question-text').textContent = `${q.A}  vs  ${q.B}`;
     document.getElementById('r-label-a').textContent = q.A;
     document.getElementById('r-label-b').textContent = q.B;
     const barA = document.getElementById('bar-a');
@@ -284,9 +304,11 @@ socket.on('state', (s) => {
 
     const badge = document.getElementById('voted-badge-wrap');
     if (myVote) {
-      const chosen = myVote === 'A' ? `${q.emoji.A} ${q.A}` : `${q.emoji.B} ${q.B}`;
+      const chosen = myVote === 'A' ? q.A : q.B;
       badge.innerHTML = `<div class="voted-badge">✓ 나의 선택: ${chosen}</div>`;
-    } else { badge.innerHTML = ''; }
+    } else {
+      badge.innerHTML = '';
+    }
     show('result');
 
   } else if (s.status === 'ended') {
@@ -295,13 +317,11 @@ socket.on('state', (s) => {
 });
 
 function vote(choice) {
-  if (myVote) return;
+  // 같은 거 또 누르면 무시
+  if (myVote === choice) return;
   myVote = choice;
   socket.emit('vote', { choice });
-  const btnA = document.getElementById('btn-a');
-  const btnB = document.getElementById('btn-b');
-  btnA.className = 'vote-btn A' + (choice === 'A' ? ' selected' : ' voted');
-  btnB.className = 'vote-btn B' + (choice === 'B' ? ' selected' : ' voted');
+  updateButtons();
 }
 </script>
 </body>
